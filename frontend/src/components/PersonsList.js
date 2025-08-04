@@ -1,21 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { 
-  collection, 
-  query,
-  where,
-  onSnapshot,
   doc,
   updateDoc,
   deleteDoc,
   writeBatch,
-  arrayUnion // Import arrayUnion for updating arrays
+  arrayUnion,
+  collection
 } from "firebase/firestore";
 
 import AddRelationship from './AddRelationship';
 
-function PersonsList({ user, connections }) {
-  const [allPersons, setAllPersons] = useState([]);
+// This component is now much simpler. It receives all the data it needs as props.
+function PersonsList({ user, connections, allPersons }) {
   const [userPerson, setUserPerson] = useState(null);
   
   const [isAddingRelationship, setIsAddingRelationship] = useState(false);
@@ -26,38 +23,16 @@ function PersonsList({ user, connections }) {
 
   const [error, setError] = useState('');
 
+  // This small useEffect just finds the user's own profile from the list.
   useEffect(() => {
-    if (!user) {
-      setAllPersons([]);
-      return;
-    }
-
-    const connectedUids = [
-      user.uid, 
-      ...(connections || []).map(c => c.requesterUid === user.uid ? c.recipientUid : c.requesterUid)
-    ];
-
-    if (connectedUids.length === 0) {
-        return;
-    }
-
-    const q = query(collection(db, "persons"), where("creatorUid", "in", connectedUids));
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const personsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAllPersons(personsData);
-
-      const self = personsData.find(p => p.claimedByUid === user.uid);
+    if (user && allPersons) {
+      const self = allPersons.find(p => p.claimedByUid === user.uid);
       setUserPerson(self);
-    }, (err) => {
-      console.error("Error fetching persons:", err);
-      setError("Could not load family list.");
-    });
+    }
+  }, [user, allPersons]);
 
-    return () => unsubscribe();
-  }, [user, connections]);
 
-  
+  // All the functions for saving, deleting, and updating remain here.
   const handleSaveRelationship = async (existingPersonId, relationshipType, newPersonData) => {
     setError('');
     try {
@@ -76,14 +51,20 @@ function PersonsList({ user, connections }) {
       });
 
       const existingPersonRef = doc(db, "persons", existingPersonId);
+      const existingPerson = allPersons.find(p => p.id === existingPersonId);
 
-      // FIX: Use arrayUnion to add to the array instead of replacing it
-      if (relationshipType === "father" || relationshipType === "mother") {
-        batch.update(existingPersonRef, { parents: arrayUnion(newPersonRef.id) });
-        batch.update(newPersonRef, { children: arrayUnion(existingPersonId) });
-      } else if (relationshipType === "child") {
+      if (relationshipType === "child") {
         batch.update(existingPersonRef, { children: arrayUnion(newPersonRef.id) });
         batch.update(newPersonRef, { parents: arrayUnion(existingPersonId) });
+
+        if (existingPerson && existingPerson.spouse) {
+          const spouseRef = doc(db, "persons", existingPerson.spouse);
+          batch.update(newPersonRef, { parents: arrayUnion(existingPerson.spouse) });
+          batch.update(spouseRef, { children: arrayUnion(newPersonRef.id) });
+        }
+      } else if (relationshipType === "father" || relationshipType === "mother") {
+        batch.update(existingPersonRef, { parents: arrayUnion(newPersonRef.id) });
+        batch.update(newPersonRef, { children: arrayUnion(existingPersonId) });
       } else if (relationshipType === "spouse") {
         batch.update(existingPersonRef, { spouse: newPersonRef.id });
         batch.update(newPersonRef, { spouse: existingPersonId });
@@ -132,38 +113,19 @@ function PersonsList({ user, connections }) {
     setIsAddingRelationship(true);
   };
 
-  // UPGRADED: This function is now smarter and can find in-laws.
   const getRelationshipToUser = (person) => {
-    if (!userPerson || person.id === userPerson.id) {
-      return null; // No relationship to self
-    }
-    // Check for direct relationships first
-    if (userPerson.parents && userPerson.parents.includes(person.id)) {
-      return person.gender === 'Male' ? '(Father)' : '(Mother)';
-    }
-    if (userPerson.children && userPerson.children.includes(person.id)) {
-      return person.gender === 'Male' ? '(Son)' : '(Daughter)';
-    }
-    if (userPerson.spouse && userPerson.spouse === person.id) {
-      return '(Spouse)';
-    }
+    if (!userPerson || person.id === userPerson.id) return null;
+    if (userPerson.parents?.includes(person.id)) return person.gender === 'Male' ? '(Father)' : '(Mother)';
+    if (userPerson.children?.includes(person.id)) return person.gender === 'Male' ? '(Son)' : '(Daughter)';
+    if (userPerson.spouse === person.id) return '(Spouse)';
 
-    // NEW: Check for relationships through the spouse (in-laws)
     if (userPerson.spouse) {
       const spousePerson = allPersons.find(p => p.id === userPerson.spouse);
       if (spousePerson) {
-        // Check if the person is a parent of the spouse
-        if (spousePerson.parents && spousePerson.parents.includes(person.id)) {
-          return person.gender === 'Male' ? '(Father-in-law)' : '(Mother-in-law)';
-        }
-        // Check if the person is a child of the spouse
-        if (spousePerson.children && spousePerson.children.includes(person.id)) {
-          return person.gender === 'Male' ? '(Son)' : '(Daughter)';
-        }
+        if (spousePerson.parents?.includes(person.id)) return person.gender === 'Male' ? '(Father-in-law)' : '(Mother-in-law)';
       }
     }
-    
-    return null; // No direct or in-law relationship found
+    return null;
   };
 
   return (
@@ -180,7 +142,7 @@ function PersonsList({ user, connections }) {
         <h2>Combined Family List</h2>
         {error && <p className="error-message">{error}</p>}
         <div className="persons-list">
-          {allPersons.map(person => (
+          {allPersons && allPersons.map(person => (
             <div key={person.id} className="person-item">
               {editingPersonId === person.id ? (
                 <div className="edit-form">
@@ -216,11 +178,7 @@ function PersonsList({ user, connections }) {
                   </div>
                   <div className="person-actions">
                     <button onClick={() => openAddRelationshipModal(person)} className="action-button add-relative">Add Relative</button>
-                    
-                    {(person.creatorUid === user.uid || person.claimedByUid === user.uid) && (
-                      <button onClick={() => startEditing(person)} className="action-button edit">Edit</button>
-                    )}
-
+                    <button onClick={() => startEditing(person)} className="action-button edit">Edit</button>
                     {person.creatorUid === user.uid && (
                       <button onClick={() => handleDeletePerson(person.id)} className="action-button delete">Delete</button>
                     )}

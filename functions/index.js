@@ -6,76 +6,73 @@ admin.initializeApp();
 const db = admin.firestore();
 
 /**
- * The "Relationship Engine". A v1 callable function that works on the free plan.
- * It adds a new person and automatically creates the two-way relationship link.
+ * A v1 callable function that allows a new user to claim a profile.
+ * It securely handles finding the profile, updating it, and creating the
+ * automatic connection to the person who invited them.
+ * This works on the Firebase free tier.
  */
-exports.addRelationship = functions.https.onCall(async (data, context) => {
-  // 1. Check if the user is authenticated.
-  if (!context.auth) {
-    throw new functions.https.HttpsError(
-        "unauthenticated",
-        "You must be logged in to add a relationship.",
-    );
-  }
-
-  // 2. Get the data sent from the app.
-  const {existingPersonId, relationshipType, newPersonData} = data;
+exports.claimProfile = functions.https.onCall(async (data, context) => {
+  // 1. Get the data from the app and the new user's ID.
+  const { invitationCode } = data;
   const uid = context.auth.uid;
+  const email = context.auth.token.email;
 
-  // 3. Validate the incoming data.
-  if (!existingPersonId || !relationshipType || !newPersonData) {
+  if (!invitationCode) {
     throw new functions.https.HttpsError(
         "invalid-argument",
-        "Missing data for relationship creation.",
+        "An invitation code is required.",
     );
   }
 
   try {
-    // 4. Generate a unique, random invitation code.
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    // 2. Find the person document with the matching invitation code.
+    const q = query(collection(db, "persons"), where("invitationCode", "==", invitationCode.toUpperCase()));
+    const querySnapshot = await getDocs(q);
 
-    // 5. Create the new person's document in the 'persons' collection.
-    const newPersonRef = await db.collection("persons").add({
-      ...newPersonData,
-      creatorUid: uid,
-      claimedByUid: null,
-      invitationCode: code,
-      parents: [],
-      children: [],
-      spouse: null,
+    if (querySnapshot.empty) {
+      throw new functions.https.HttpsError("not-found", "Invalid invitation code.");
+    }
+    
+    const personDoc = querySnapshot.docs[0];
+    const personData = personDoc.data();
+
+    if (personData.claimedByUid) {
+      throw new functions.https.HttpsError("already-exists", "This invitation has already been used.");
+    }
+
+    // 3. Perform all database updates in a single, safe batch.
+    const batch = writeBatch(db);
+
+    // Update the person document
+    const personRef = doc(db, "persons", personDoc.id);
+    batch.update(personRef, { claimedByUid: uid, email: email }); 
+
+    // Create the user document
+    const userRef = doc(db, "users", uid);
+    batch.set(userRef, {
+      uid: uid,
+      email: email,
+      displayName: personData.firstName || email,
+      personId: personDoc.id,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    // 6. Update both documents in a transaction.
-    await db.runTransaction(async (transaction) => {
-      const existingPersonRef = db.collection("persons").doc(existingPersonId);
-      const newPersonDocRef = db.collection("persons").doc(newPersonRef.id);
-
-      if (relationshipType === "father" || relationshipType === "mother") {
-        transaction.update(existingPersonRef, {
-          parents: admin.firestore.FieldValue.arrayUnion(newPersonRef.id),
-        });
-        transaction.update(newPersonDocRef, {
-          children: admin.firestore.FieldValue.arrayUnion(existingPersonId),
-        });
-      } else if (relationshipType === "child") {
-        transaction.update(existingPersonRef, {
-          children: admin.firestore.FieldValue.arrayUnion(newPersonRef.id),
-        });
-        transaction.update(newPersonDocRef, {
-          parents: admin.firestore.FieldValue.arrayUnion(existingPersonId),
-        });
-      } else if (relationshipType === "spouse") {
-        transaction.update(existingPersonRef, {spouse: newPersonRef.id});
-        transaction.update(newPersonDocRef, {spouse: existingPersonId});
-      }
+    // Create the automatic, accepted connection
+    const connectionRef = doc(collection(db, "connections"));
+    batch.set(connectionRef, {
+        requesterUid: personData.creatorUid,
+        recipientUid: uid,
+        status: 'accepted',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    return {success: true, newPersonId: newPersonRef.id};
+    // 4. Commit all changes.
+    await batch.commit();
+
+    return { success: true, message: "Profile claimed successfully!" };
+
   } catch (error) {
-    console.error("Error in addRelationship function:", error);
-    throw new functions.https.HttpsError(
-        "internal",
-        "An error occurred while creating the relationship.",
-    );
+    console.error("Error in claimProfile function:", error);
+    throw new functions.https.HttpsError("internal", "An error occurred while claiming the profile.");
   }
 });
