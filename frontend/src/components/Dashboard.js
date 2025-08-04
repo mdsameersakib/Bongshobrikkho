@@ -119,7 +119,8 @@ function Dashboard({ user, handleLogout }) {
       {/* Render the other components, passing down the necessary data */}
       <FamilyWall user={user} connections={connections} />
       <UserSearch user={user} outgoingRequests={outgoingRequests} connections={connections} />
-      <PersonsList user={user} />
+      {/* THIS IS THE FIX: We now pass the 'connections' state down to PersonsList */}
+      <PersonsList user={user} connections={connections} />
     </div>
   );
 }

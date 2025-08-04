@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 
-// This component receives the login/register functions as "props" (properties) from App.js
+// This component receives the login/register functions as "props" from App.js
 function Auth({ handleLogin, handleRegister, error }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // NEW state for the invitation code
+  const [invitationCode, setInvitationCode] = useState('');
 
   const onLogin = (e) => {
     e.preventDefault();
@@ -12,7 +14,8 @@ function Auth({ handleLogin, handleRegister, error }) {
 
   const onRegister = (e) => {
     e.preventDefault();
-    handleRegister(email, password);
+    // Pass the invitation code up to the handleRegister function
+    handleRegister(email, password, invitationCode);
   };
 
   return (
@@ -21,18 +24,26 @@ function Auth({ handleLogin, handleRegister, error }) {
       <form>
         <div className="person-form">
             <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            className="auth-input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              className="auth-input"
             />
             <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
-            className="auth-input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              className="auth-input"
+            />
+            {/* NEW input field for the invitation code */}
+            <input
+              type="text"
+              value={invitationCode}
+              onChange={(e) => setInvitationCode(e.target.value)}
+              placeholder="Invitation Code (Optional)"
+              className="auth-input"
             />
             <div className="button-group">
                 <button onClick={onLogin} className="auth-button">Login</button>
