@@ -20,7 +20,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 40px 10px;
+  padding: 40px 10px; /* Add some horizontal padding */
   box-sizing: border-box;
 }
 
@@ -44,7 +44,7 @@ h1 {
   border-radius: 8px;
   border: 1px solid #dddfe2;
   background-color: #fff;
-  font-family: inherit;
+  font-family: inherit; /* Make textarea use the same font */
 }
 
 .auth-button {
@@ -173,7 +173,7 @@ h1 {
 .person-actions, .edit-actions {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: wrap; /* Allow buttons to wrap on small screens */
 }
 
 .action-button {
@@ -195,8 +195,49 @@ h1 {
   cursor: not-allowed;
 }
 
-.post-form, .post-item {
-  /* ... existing styles ... */
+.post-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.post-textarea {
+  resize: vertical; /* Allow user to resize the textarea vertically */
+}
+
+.posts-list {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.post-item {
+  background-color: #e7f3ff; /* A light blue for posts */
+  border-left: 4px solid #0062E6;
+  padding: 15px;
+  border-radius: 6px;
+  text-align: left;
+}
+
+.post-author {
+  margin: 0 0 5px 0;
+  font-weight: bold;
+  font-size: 1rem;
+  color: #05386b;
+}
+
+.post-content {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  white-space: pre-wrap; /* Respects line breaks in the post */
+}
+
+.post-time {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #606770;
+  text-align: right;
 }
 
 .action-button.add-relative {
@@ -205,7 +246,7 @@ h1 {
 
 .invitation-code {
   font-size: 0.9rem;
-  color: #28a745;
+  color: #28a745; /* Green to stand out */
   margin-top: 5px;
   background-color: #e9f7ef;
   padding: 4px 8px;
@@ -214,16 +255,16 @@ h1 {
 }
 
 .modal-backdrop {
-  position: fixed;
+  position: fixed; /* Cover the whole screen */
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 1000; /* Make sure it's on top of everything */
 }
 
 .modal-content {
@@ -245,7 +286,6 @@ h1 {
   display: block;
 }
 
-/* --- NEW Style for Relationship Tag --- */
 .relationship-tag {
   font-weight: normal;
   font-size: 0.9rem;
