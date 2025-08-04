@@ -11,63 +11,78 @@ import {
   or
 } from "firebase/firestore";
 
-// Import the components we created
+// Import all our components
+import Notifications from './Notifications';
 import FamilyWall from './FamilyWall';
 import UserSearch from './UserSearch';
 import PersonsList from './PersonsList';
 
-// This component receives the current user and the logout function as props
 function Dashboard({ user, handleLogout }) {
-  // --- State for Connections ---
+  // State for Connections
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [outgoingRequests, setOutgoingRequests] = useState([]);
   const [connections, setConnections] = useState([]);
+  
+  // State for the combined family list now lives here
+  const [allPersons, setAllPersons] = useState([]);
+
   const [error, setError] = useState('');
 
-  // --- Listener for all connection-related data ---
+  // Listener for Connections
   useEffect(() => {
     if (!user) {
-      // Clear all connection data if user logs out
       setIncomingRequests([]);
       setOutgoingRequests([]);
       setConnections([]);
       return;
     }
-
-    // This single query gets all documents where the user is involved
     const q = query(collection(db, "connections"), or(
       where("requesterUid", "==", user.uid),
       where("recipientUid", "==", user.uid)
     ));
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const incoming = [];
-      const outgoing = [];
-      const connected = [];
-
+      const incoming = [], outgoing = [], connected = [];
       snapshot.forEach(doc => {
         const data = { id: doc.id, ...doc.data() };
         if (data.status === 'pending') {
-          if (data.recipientUid === user.uid) {
-            incoming.push(data);
-          } else {
-            outgoing.push(data);
-          }
+          if (data.recipientUid === user.uid) incoming.push(data);
+          else outgoing.push(data);
         } else if (data.status === 'accepted') {
           connected.push(data);
         }
       });
-
       setIncomingRequests(incoming);
       setOutgoingRequests(outgoing);
       setConnections(connected);
     });
-
-    // Cleanup the listener
     return () => unsubscribe();
-  }, [user]); // Rerun when user logs in
+  }, [user]);
 
-  // --- Connection Management Functions ---
+  // The logic for fetching the family list is now here
+  useEffect(() => {
+    if (!user) {
+      setAllPersons([]);
+      return;
+    }
+    const connectedUids = [
+      user.uid, 
+      ...(connections || []).map(c => c.requesterUid === user.uid ? c.recipientUid : c.requesterUid)
+    ];
+    if (connectedUids.length === 0) return;
+
+    const q = query(collection(db, "persons"), where("creatorUid", "in", connectedUids));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const personsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAllPersons(personsData);
+    }, (err) => {
+        console.error("Error fetching persons in Dashboard:", err);
+        setError("Could not load family data.");
+    });
+    return () => unsubscribe();
+  }, [user, connections]);
+
+
+  // Connection Management Functions
   const handleAcceptRequest = async (connectionId) => {
     const connectionRef = doc(db, "connections", connectionId);
     try {
@@ -76,7 +91,6 @@ function Dashboard({ user, handleLogout }) {
       setError("Failed to accept request.");
     }
   };
-
   const handleDeclineRequest = async (connectionId) => {
     const connectionRef = doc(db, "connections", connectionId);
     try {
@@ -85,7 +99,6 @@ function Dashboard({ user, handleLogout }) {
       setError("Failed to decline request.");
     }
   };
-
 
   return (
     <div className="dashboard">
@@ -96,7 +109,9 @@ function Dashboard({ user, handleLogout }) {
       
       {error && <p className="error-message">{error}</p>}
 
-      {/* --- Connection Requests Card --- */}
+      {/* Render the new Notifications component */}
+      <Notifications allPersons={allPersons} />
+
       {incomingRequests.length > 0 && (
         <div className="card">
           <h2>Connection Requests</h2>
@@ -119,8 +134,8 @@ function Dashboard({ user, handleLogout }) {
       {/* Render the other components, passing down the necessary data */}
       <FamilyWall user={user} connections={connections} />
       <UserSearch user={user} outgoingRequests={outgoingRequests} connections={connections} />
-      {/* THIS IS THE FIX: We now pass the 'connections' state down to PersonsList */}
-      <PersonsList user={user} connections={connections} />
+      {/* We now pass the family list down to PersonsList */}
+      <PersonsList user={user} connections={connections} allPersons={allPersons} />
     </div>
   );
 }
