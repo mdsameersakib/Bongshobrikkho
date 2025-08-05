@@ -2,34 +2,29 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can read other user profiles for searching,
-    // but can only create or update their own.
+    // Users can read other user profiles for searching.
     match /users/{userId} {
       allow read: if request.auth != null;
       allow create, update: if request.auth.uid == userId;
     }
 
-    // UPDATED Rules for the 'persons' collection
-    // These rules are now more open to allow for collaboration.
+    // Persons collection is open for collaboration among logged-in users.
     match /persons/{personId} {
-      // Any logged-in user can read and create person documents.
-      allow read, create: if request.auth != null;
-
-      // Any logged-in user can update any person document.
-      // This allows for collaborative editing by the whole family.
-      allow update: if request.auth != null;
-
-      // For safety, only the original creator can delete a person.
+      allow read, create, update: if request.auth != null;
       allow delete: if request.auth != null && resource.data.creatorUid == request.auth.uid;
     }
 
-    // Connection rules remain the same. They are already correct.
+    // --- NEW, MORE OPEN RULE FOR CONNECTIONS ---
+    // Any logged-in user can READ the connections list. This is necessary
+    // for the app to find the family network during registration.
     match /connections/{connectionId} {
+      allow read: if request.auth != null; // This rule is now more open
+
+      // Create, update, delete rules remain the same and are still secure.
       allow create: if request.auth != null && (
         request.resource.data.requesterUid == request.auth.uid ||
         (request.resource.data.recipientUid == request.auth.uid && request.resource.data.status == 'accepted')
       );
-      allow read: if request.auth != null && (request.auth.uid == resource.data.requesterUid || request.auth.uid == resource.data.recipientUid);
       allow update: if request.auth != null && request.auth.uid == resource.data.recipientUid;
       allow delete: if request.auth != null && request.auth.uid == resource.data.requesterUid;
     }
