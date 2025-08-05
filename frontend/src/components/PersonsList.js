@@ -13,13 +13,10 @@ import AddRelationship from './AddRelationship';
 
 function PersonsList({ user, connections, allPersons }) {
   const [userPerson, setUserPerson] = useState(null);
-  
   const [isAddingRelationship, setIsAddingRelationship] = useState(false);
   const [personToAddTo, setPersonToAddTo] = useState(null);
-
   const [editingPersonId, setEditingPersonId] = useState(null);
   const [editingPersonData, setEditingPersonData] = useState({});
-
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -59,8 +56,7 @@ function PersonsList({ user, connections, allPersons }) {
       } else if (relationshipType === "spouse") {
         batch.set(newPersonRef, { ...baseNewPerson, spouse: existingPersonId });
         batch.update(newPersonRef, { spouse: existingPersonId });
-      } 
-      else if (relationshipType === "sibling") {
+      } else if (relationshipType === "sibling") {
         if (!existingPerson?.parents || existingPerson.parents.length === 0) {
             setError("Cannot add a sibling to someone with no parents.");
             return;
@@ -74,7 +70,6 @@ function PersonsList({ user, connections, allPersons }) {
 
       await batch.commit();
       setIsAddingRelationship(false);
-
     } catch (err) {
       console.error("Error creating relationship:", err);
       setError("Failed to create relationship.");
@@ -88,7 +83,6 @@ function PersonsList({ user, connections, allPersons }) {
     }
   };
 
-  // This function is now used by the edit form's "Save" button.
   const handleUpdatePerson = async (personId) => {
     try {
       await updateDoc(doc(db, "persons", personId), editingPersonData);
@@ -104,7 +98,6 @@ function PersonsList({ user, connections, allPersons }) {
     });
   };
 
-  // This function is now used by the edit form's input fields.
   const handleFormChange = (e, setter) => {
     const { name, value } = e.target;
     setter(prevState => ({ ...prevState, [name]: value }));
@@ -115,17 +108,28 @@ function PersonsList({ user, connections, allPersons }) {
     setIsAddingRelationship(true);
   };
 
+  // --- FULLY UPGRADED getRelationshipToUser FUNCTION ---
   const getRelationshipToUser = (person) => {
     if (!userPerson || person.id === userPerson.id || !allPersons) return null;
-    if (userPerson.parents?.includes(person.id)) return person.gender === 'Male' ? '(Father)' : '(Mother)';
+
+    const myParents = userPerson.parents || [];
+    const theirParents = person.parents || [];
+
+    // 1. Direct relationships (most important)
+    if (myParents.includes(person.id)) return person.gender === 'Male' ? '(Father)' : '(Mother)';
     if (userPerson.children?.includes(person.id)) return person.gender === 'Male' ? '(Son)' : '(Daughter)';
     if (userPerson.spouse === person.id) return person.gender === 'Male' ? '(Husband)' : '(Wife)';
-    if (userPerson.parents?.length > 0 && person.parents?.length > 0) {
-        const hasSharedParent = userPerson.parents.some(pId => person.parents.includes(pId));
-        if (hasSharedParent) return person.gender === 'Male' ? '(Brother)' : '(Sister)';
+
+    // 2. Sibling check
+    if (myParents.length > 0 && theirParents.length > 0) {
+        if (myParents.some(pId => theirParents.includes(pId))) {
+            return person.gender === 'Male' ? '(Brother)' : '(Sister)';
+        }
     }
-    if (userPerson.parents?.length > 0) {
-        for (const parentId of userPerson.parents) {
+
+    // 3. Grand-relations
+    if (myParents.length > 0) {
+        for (const parentId of myParents) {
             const parent = allPersons.find(p => p.id === parentId);
             if (parent?.parents?.includes(person.id)) {
                 return person.gender === 'Male' ? '(Grandfather)' : '(Grandmother)';
@@ -134,18 +138,62 @@ function PersonsList({ user, connections, allPersons }) {
     }
     if (userPerson.children?.length > 0) {
         for (const childId of userPerson.children) {
-            if (person.parents?.includes(childId)) {
+            if (theirParents.includes(childId)) {
                 return person.gender === 'Male' ? '(Grandson)' : '(Granddaughter)';
             }
         }
     }
+
+    // 4. In-Laws
     if (userPerson.spouse) {
-      const spousePerson = allPersons.find(p => p.id === userPerson.spouse);
-      if (spousePerson?.parents?.includes(person.id)) {
-        return person.gender === 'Male' ? '(Father-in-law)' : '(Mother-in-law)';
-      }
+        const spouse = allPersons.find(p => p.id === userPerson.spouse);
+        if (spouse) {
+            // Parent-in-law
+            if (spouse.parents?.includes(person.id)) {
+                return person.gender === 'Male' ? '(Father-in-law)' : '(Mother-in-law)';
+            }
+            // Sibling-in-law (Spouse's Sibling)
+            if (spouse.parents?.length > 0 && theirParents.length > 0) {
+                if (spouse.parents.some(pId => theirParents.includes(pId))) {
+                    return person.gender === 'Male' ? '(Brother-in-law)' : '(Sister-in-law)';
+                }
+            }
+        }
     }
-    return null;
+
+    // 5. Aunts, Uncles, Nieces, Nephews, Cousins
+    if (myParents.length > 0) {
+        for (const parentId of myParents) {
+            const myParent = allPersons.find(p => p.id === parentId);
+            if (myParent) {
+                // Uncle / Aunt (My Parent's Sibling)
+                if (myParent.parents?.length > 0 && person.parents?.length > 0) {
+                    if (myParent.parents.some(pId => person.parents.includes(pId))) {
+                        return person.gender === 'Male' ? '(Uncle)' : '(Aunt)';
+                    }
+                }
+                // Cousin (Child of my Parent's Sibling)
+                if (person.parents?.length > 0) {
+                   for (const theirParentId of person.parents) {
+                       const theirParent = allPersons.find(p => p.id === theirParentId);
+                       if (theirParent && myParent.parents?.some(pId => theirParent.parents?.includes(pId))) {
+                           return '(Cousin)';
+                       }
+                   }
+                }
+            }
+        }
+    }
+    
+    // Niece / Nephew (My Sibling's Child)
+    const mySiblings = allPersons.filter(p => p.id !== userPerson.id && p.parents?.length > 0 && myParents.some(pId => p.parents.includes(pId)));
+    for (const sibling of mySiblings) {
+        if (sibling.children?.includes(person.id)) {
+            return person.gender === 'Male' ? '(Nephew)' : '(Niece)';
+        }
+    }
+
+    return null; // No direct or extended relationship found
   };
 
   return (
@@ -166,7 +214,6 @@ function PersonsList({ user, connections, allPersons }) {
           {allPersons && allPersons.map(person => (
             <div key={person.id} className="person-item">
               {editingPersonId === person.id ? (
-                // --- THIS IS THE RESTORED EDIT FORM CODE ---
                 <div className="edit-form">
                    <input name="firstName" value={editingPersonData.firstName} onChange={(e) => handleFormChange(e, setEditingPersonData)} placeholder="First Name" className="auth-input" />
                    <input name="lastName" value={editingPersonData.lastName} onChange={(e) => handleFormChange(e, setEditingPersonData)} placeholder="Last Name" className="auth-input" />
