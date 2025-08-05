@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BongshoBrikkho - Family List</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc; /* gray-100 */
+        }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            color: #4a5568; /* gray-600 */
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+        }
+        .sidebar-link:hover {
+            background-color: #e2e8f0; /* gray-200 */
+            color: #1a202c; /* gray-800 */
+        }
+        .sidebar-link.active {
+            background-color: #2c7a7b; /* teal-700 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .sidebar-link i {
+            width: 1.25rem;
+            margin-right: 0.75rem;
+            text-align: center;
+        }
+        /* Table styles */
+        .table-header {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #6b7280; /* text-gray-500 */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .table-cell {
+            /* Increased vertical padding from py-4 to py-5 */
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+            padding-top: 1.25rem;
+            padding-bottom: 1.25rem;
+            white-space: nowrap;
+            font-size: 1rem;
+        }
+        .table-row-hover {
+            transition-property: background-color;
+            transition-duration: 200ms;
+        }
+        .table-row-hover:hover {
+            background-color: #f9fafb; /* bg-gray-50 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-lg flex-shrink-0">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold text-teal-700">BongshoBrikkho</h1>
+            </div>
+            <nav class="mt-6 px-4">
+                <a href="dashboard.html" class="sidebar-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="family-list.html" class="sidebar-link">
+                    <i class="fas fa-users"></i>
+                    <span>Family List</span>
+                </a>
+                <a href="family-tree.html" class="sidebar-link">
+                    <i class="fas fa-sitemap"></i>
+                    <span>Family Tree</span>
+                </a>
+                <a href="family-wall.html" class="sidebar-link">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Family Wall</span>
+                </a>
+                <a href="events.html" class="sidebar-link">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Events</span>
+                </a>
+            </nav>
+            <div class="absolute bottom-0 w-64 p-4 border-t">
+                 <div class="flex items-center">
+                    <img src="https://placehold.co/40x40/2c7a7b/ffffff?text=S" alt="User Avatar" class="rounded-full h-10 w-10">
+                    <div class="ml-3">
+                        <p class="text-sm font-semibold text-gray-800">Sameer Sakib</p>
+                        <a href="#" class="text-xs text-red-600 hover:underline">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 md:p-10 overflow-y-auto">
+            <header class="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-800">Family List</h2>
+                    <p class="text-gray-500 mt-1">A complete directory of your family members.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <input type="text" placeholder="Search members..." class="w-full md:w-64 border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                     <button class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex-shrink-0">
+                        <i class="fas fa-plus mr-2"></i>Add Member
+                    </button>
+                </div>
+            </header>
+
+            <!-- Family List Table -->
+            <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="table-header">Name</th>
+                                <th scope="col" class="table-header">Relationship</th>
+                                <th scope="col" class="table-header">Date of Birth</th>
+                                <th scope="col" class="table-header">Invite Code</th>
+                                <th scope="col" class="table-header">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <!-- Row 1 -->
+                            <tr class="table-row-hover">
+                                <td class="table-cell">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-full" src="https://placehold.co/40x40/2c7a7b/ffffff?text=S" alt="Sameer Sakib avatar">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="font-medium text-gray-900">Sameer Sakib</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="table-cell text-gray-500">You</td>
+                                <td class="table-cell text-gray-500">1990-11-29</td>
+                                <td class="table-cell text-gray-500">-</td>
+                                <td class="table-cell">
+                                    <a href="#" class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold py-1 px-3 rounded-md text-xs transition-colors">Edit</a>
+                                </td>
+                            </tr>
+                            <!-- Row 2 -->
+                            <tr class="table-row-hover">
+                                <td class="table-cell">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-full" src="https://placehold.co/40x40/16a34a/ffffff?text=NR" alt="Nafiza Rimi avatar">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="font-medium text-gray-900">Nafiza Rimi</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="table-cell text-gray-500">Wife</td>
+                                <td class="table-cell text-gray-500">1992-10-23</td>
+                                <td class="table-cell text-gray-500">-</td>
+                                <td class="table-cell">
+                                    <a href="#" class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold py-1 px-3 rounded-md text-xs transition-colors">Edit</a>
+                                </td>
+                            </tr>
+                            <!-- Row 3 -->
+                            <tr class="table-row-hover">
+                                <td class="table-cell">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-full" src="https://placehold.co/40x40/6ee7b7/ffffff?text=AS" alt="Aryan Sakib avatar">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="font-medium text-gray-900">Aryan Sakib</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="table-cell text-gray-500">Son</td>
+                                <td class="table-cell text-gray-500">2015-05-10</td>
+                                <td class="table-cell text-gray-500">-</td>
+                                <td class="table-cell">
+                                    <a href="#" class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold py-1 px-3 rounded-md text-xs transition-colors">Edit</a>
+                                </td>
+                            </tr>
+                            <!-- Row 4 -->
+                            <tr class="table-row-hover">
+                                <td class="table-cell">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-full" src="https://placehold.co/40x40/a7f3d0/ffffff?text=AS" alt="Ayla Sakib avatar">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="font-medium text-gray-900">Ayla Sakib</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="table-cell text-gray-500">Daughter</td>
+                                <td class="table-cell text-gray-500">2018-08-10</td>
+                                <td class="table-cell text-gray-500">-</td>
+                                <td class="table-cell">
+                                    <a href="#" class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold py-1 px-3 rounded-md text-xs transition-colors">Edit</a>
+                                </td>
+                            </tr>
+                            <!-- Row 5 -->
+                            <tr class="table-row-hover">
+                                <td class="table-cell">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-full" src="https://placehold.co/40x40/22c55e/ffffff?text=KS" alt="Kamal Sakib avatar">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="font-medium text-gray-900">Kamal Sakib</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="table-cell text-gray-500">Father</td>
+                                <td class="table-cell text-gray-500">1965-02-20</td>
+                                <td class="table-cell"><span class="font-mono bg-gray-200 text-gray-700 py-0.5 px-1.5 rounded text-xs">KML45S</span></td>
+                                <td class="table-cell">
+                                    <a href="#" class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold py-1 px-3 rounded-md text-xs transition-colors">Edit</a>
+                                </td>
+                            </tr>
+                            <!-- Row 6 -->
+                            <tr class="table-row-hover">
+                                <td class="table-cell">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-full" src="https://placehold.co/40x40/16a34a/ffffff?text=JS" alt="Jamila Sakib avatar">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="font-medium text-gray-900">Jamila Sakib</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="table-cell text-gray-500">Mother</td>
+                                <td class="table-cell text-gray-500">1968-07-15</td>
+                                <td class="table-cell"><span class="font-mono bg-gray-200 text-gray-700 py-0.5 px-1.5 rounded text-xs">JML98B</span></td>
+                                <td class="table-cell">
+                                    <a href="#" class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold py-1 px-3 rounded-md text-xs transition-colors">Edit</a>
+                                </td>
+                            </tr>
+                             <!-- Row 7 -->
+                            <tr class="table-row-hover">
+                                <td class="table-cell">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-full" src="https://placehold.co/40x40/34d399/ffffff?text=SS" alt="Sara Sakib avatar">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="font-medium text-gray-900">Sara Sakib</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="table-cell text-gray-500">Sister</td>
+                                <td class="table-cell text-gray-500">1994-01-30</td>
+                                <td class="table-cell text-gray-500">-</td>
+                                <td class="table-cell">
+                                    <a href="#" class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold py-1 px-3 rounded-md text-xs transition-colors">Edit</a>
+                                </td>
+                            </tr>
+                             <!-- Row 8 -->
+                            <tr class="table-row-hover">
+                                <td class="table-cell">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-full" src="https://placehold.co/40x40/6ee7b7/ffffff?text=LK" alt="Leo Khan avatar">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="font-medium text-gray-900">Leo Khan</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="table-cell text-gray-500">Nephew</td>
+                                <td class="table-cell text-gray-500">2020-09-05</td>
+                                <td class="table-cell"><span class="font-mono bg-gray-200 text-gray-700 py-0.5 px-1.5 rounded text-xs">LEO20K</span></td>
+                                <td class="table-cell">
+                                    <a href="#" class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold py-1 px-3 rounded-md text-xs transition-colors">Edit</a>
+                                </td>
+                            </tr>
+                             <!-- Row 9 -->
+                            <tr class="table-row-hover">
+                                <td class="table-cell">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-full" src="https://placehold.co/40x40/34d399/ffffff?text=RC" alt="Rina Chowdhury avatar">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="font-medium text-gray-900">Rina Chowdhury</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="table-cell text-gray-500">Sister-in-law</td>
+                                <td class="table-cell text-gray-500">1995-03-12</td>
+                                <td class="table-cell text-gray-500">-</td>
+                                <td class="table-cell">
+                                    <a href="#" class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold py-1 px-3 rounded-md text-xs transition-colors">Edit</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>
