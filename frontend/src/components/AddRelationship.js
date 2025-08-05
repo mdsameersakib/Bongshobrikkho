@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 
-// This component is a modal/form for adding a new relative.
-// It receives the person we're adding a relative TO, a function to handle saving,
-// and a function to close itself.
-function AddRelationship({ existingPerson, onSave, onClose }) {
-  // State for the new person's details
+// This component now also needs to know about allPersons to check for parents
+function AddRelationship({ existingPerson, allPersons, onSave, onClose }) {
   const [newPersonData, setNewPersonData] = useState({
     firstName: '',
     lastName: '',
@@ -12,8 +9,10 @@ function AddRelationship({ existingPerson, onSave, onClose }) {
     birthDate: '',
   });
 
-  // State for the selected relationship type
   const [relationshipType, setRelationshipType] = useState('child');
+  
+  // --- NEW: Check if the person has parents to enable the sibling option ---
+  const hasParents = existingPerson.parents && existingPerson.parents.length > 0;
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -26,14 +25,11 @@ function AddRelationship({ existingPerson, onSave, onClose }) {
       alert("First name is required.");
       return;
     }
-    // Call the onSave function passed from the parent, sending all the data.
     onSave(existingPerson.id, relationshipType, newPersonData);
   };
 
   return (
-    // The "modal-backdrop" is a semi-transparent background
     <div className="modal-backdrop">
-      {/* The "modal-content" is the form itself */}
       <div className="modal-content">
         <h2>Add a Relative to {existingPerson.firstName}</h2>
         <form onSubmit={handleSave} className="person-form">
@@ -44,9 +40,17 @@ function AddRelationship({ existingPerson, onSave, onClose }) {
             className="auth-input"
           >
             <option value="child">Child (Son/Daughter)</option>
+            <option value="spouse">Spouse (Husband/Wife)</option>
             <option value="father">Father</option>
             <option value="mother">Mother</option>
-            <option value="spouse">Spouse (Husband/Wife)</option>
+            {/* --- NEW SIBLING OPTION --- */}
+            <option 
+                value="sibling" 
+                disabled={!hasParents}
+                title={!hasParents ? "You must add parents to this person before adding a sibling." : ""}
+            >
+                Sibling (Brother/Sister)
+            </option>
           </select>
 
           <label>New Person's Details:</label>
@@ -61,7 +65,6 @@ function AddRelationship({ existingPerson, onSave, onClose }) {
           
           <div className="button-group">
             <button type="submit" className="action-button save">Save Relationship</button>
-            {/* The onClose function is called when the cancel button is clicked */}
             <button type="button" onClick={onClose} className="action-button cancel">Cancel</button>
           </div>
         </form>
