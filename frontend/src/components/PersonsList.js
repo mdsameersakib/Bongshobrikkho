@@ -11,7 +11,6 @@ import {
 
 import AddRelationship from './AddRelationship';
 
-// This component is now much simpler. It receives all the data it needs as props.
 function PersonsList({ user, connections, allPersons }) {
   const [userPerson, setUserPerson] = useState(null);
   
@@ -23,7 +22,6 @@ function PersonsList({ user, connections, allPersons }) {
 
   const [error, setError] = useState('');
 
-  // This small useEffect just finds the user's own profile from the list.
   useEffect(() => {
     if (user && allPersons) {
       const self = allPersons.find(p => p.claimedByUid === user.uid);
@@ -31,8 +29,6 @@ function PersonsList({ user, connections, allPersons }) {
     }
   }, [user, allPersons]);
 
-
-  // All the functions for saving, deleting, and updating remain here.
   const handleSaveRelationship = async (existingPersonId, relationshipType, newPersonData) => {
     setError('');
     try {
@@ -40,34 +36,40 @@ function PersonsList({ user, connections, allPersons }) {
       const invitationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const newPersonRef = doc(collection(db, "persons"));
 
-      batch.set(newPersonRef, {
+      const baseNewPerson = {
         ...newPersonData,
-        creatorUid: user.uid,
-        claimedByUid: null,
-        invitationCode: invitationCode,
-        parents: [],
-        children: [],
-        spouse: null,
-      });
+        creatorUid: user.uid, claimedByUid: null, invitationCode: invitationCode,
+        parents: [], children: [], spouse: null,
+      };
 
       const existingPersonRef = doc(db, "persons", existingPersonId);
       const existingPerson = allPersons.find(p => p.id === existingPersonId);
 
       if (relationshipType === "child") {
+        batch.set(newPersonRef, { ...baseNewPerson, parents: arrayUnion(existingPersonId) });
         batch.update(existingPersonRef, { children: arrayUnion(newPersonRef.id) });
-        batch.update(newPersonRef, { parents: arrayUnion(existingPersonId) });
-
-        if (existingPerson && existingPerson.spouse) {
+        if (existingPerson?.spouse) {
           const spouseRef = doc(db, "persons", existingPerson.spouse);
           batch.update(newPersonRef, { parents: arrayUnion(existingPerson.spouse) });
           batch.update(spouseRef, { children: arrayUnion(newPersonRef.id) });
         }
       } else if (relationshipType === "father" || relationshipType === "mother") {
+        batch.set(newPersonRef, { ...baseNewPerson, children: arrayUnion(existingPersonId) });
         batch.update(existingPersonRef, { parents: arrayUnion(newPersonRef.id) });
-        batch.update(newPersonRef, { children: arrayUnion(existingPersonId) });
       } else if (relationshipType === "spouse") {
-        batch.update(existingPersonRef, { spouse: newPersonRef.id });
+        batch.set(newPersonRef, { ...baseNewPerson, spouse: existingPersonId });
         batch.update(newPersonRef, { spouse: existingPersonId });
+      } 
+      else if (relationshipType === "sibling") {
+        if (!existingPerson?.parents || existingPerson.parents.length === 0) {
+            setError("Cannot add a sibling to someone with no parents.");
+            return;
+        }
+        batch.set(newPersonRef, { ...baseNewPerson, parents: existingPerson.parents });
+        existingPerson.parents.forEach(parentId => {
+            const parentRef = doc(db, "persons", parentId);
+            batch.update(parentRef, { children: arrayUnion(newPersonRef.id) });
+        });
       }
 
       await batch.commit();
@@ -86,6 +88,7 @@ function PersonsList({ user, connections, allPersons }) {
     }
   };
 
+  // This function is now used by the edit form's "Save" button.
   const handleUpdatePerson = async (personId) => {
     try {
       await updateDoc(doc(db, "persons", personId), editingPersonData);
@@ -96,13 +99,12 @@ function PersonsList({ user, connections, allPersons }) {
   const startEditing = (person) => {
     setEditingPersonId(person.id);
     setEditingPersonData({
-      firstName: person.firstName,
-      lastName: person.lastName,
-      gender: person.gender,
-      birthDate: person.birthDate || ''
+      firstName: person.firstName, lastName: person.lastName,
+      gender: person.gender, birthDate: person.birthDate || ''
     });
   };
 
+  // This function is now used by the edit form's input fields.
   const handleFormChange = (e, setter) => {
     const { name, value } = e.target;
     setter(prevState => ({ ...prevState, [name]: value }));
@@ -114,15 +116,33 @@ function PersonsList({ user, connections, allPersons }) {
   };
 
   const getRelationshipToUser = (person) => {
-    if (!userPerson || person.id === userPerson.id) return null;
+    if (!userPerson || person.id === userPerson.id || !allPersons) return null;
     if (userPerson.parents?.includes(person.id)) return person.gender === 'Male' ? '(Father)' : '(Mother)';
     if (userPerson.children?.includes(person.id)) return person.gender === 'Male' ? '(Son)' : '(Daughter)';
-    if (userPerson.spouse === person.id) return '(Spouse)';
-
+    if (userPerson.spouse === person.id) return person.gender === 'Male' ? '(Husband)' : '(Wife)';
+    if (userPerson.parents?.length > 0 && person.parents?.length > 0) {
+        const hasSharedParent = userPerson.parents.some(pId => person.parents.includes(pId));
+        if (hasSharedParent) return person.gender === 'Male' ? '(Brother)' : '(Sister)';
+    }
+    if (userPerson.parents?.length > 0) {
+        for (const parentId of userPerson.parents) {
+            const parent = allPersons.find(p => p.id === parentId);
+            if (parent?.parents?.includes(person.id)) {
+                return person.gender === 'Male' ? '(Grandfather)' : '(Grandmother)';
+            }
+        }
+    }
+    if (userPerson.children?.length > 0) {
+        for (const childId of userPerson.children) {
+            if (person.parents?.includes(childId)) {
+                return person.gender === 'Male' ? '(Grandson)' : '(Granddaughter)';
+            }
+        }
+    }
     if (userPerson.spouse) {
       const spousePerson = allPersons.find(p => p.id === userPerson.spouse);
-      if (spousePerson) {
-        if (spousePerson.parents?.includes(person.id)) return person.gender === 'Male' ? '(Father-in-law)' : '(Mother-in-law)';
+      if (spousePerson?.parents?.includes(person.id)) {
+        return person.gender === 'Male' ? '(Father-in-law)' : '(Mother-in-law)';
       }
     }
     return null;
@@ -133,6 +153,7 @@ function PersonsList({ user, connections, allPersons }) {
       {isAddingRelationship && (
         <AddRelationship 
           existingPerson={personToAddTo}
+          allPersons={allPersons}
           onSave={handleSaveRelationship}
           onClose={() => setIsAddingRelationship(false)}
         />
@@ -145,18 +166,19 @@ function PersonsList({ user, connections, allPersons }) {
           {allPersons && allPersons.map(person => (
             <div key={person.id} className="person-item">
               {editingPersonId === person.id ? (
+                // --- THIS IS THE RESTORED EDIT FORM CODE ---
                 <div className="edit-form">
-                   <input name="firstName" value={editingPersonData.firstName} onChange={(e) => handleFormChange(e, setEditingPersonData)} className="auth-input" />
-                   <input name="lastName" value={editingPersonData.lastName} onChange={(e) => handleFormChange(e, setEditingPersonData)} className="auth-input" />
+                   <input name="firstName" value={editingPersonData.firstName} onChange={(e) => handleFormChange(e, setEditingPersonData)} placeholder="First Name" className="auth-input" />
+                   <input name="lastName" value={editingPersonData.lastName} onChange={(e) => handleFormChange(e, setEditingPersonData)} placeholder="Last Name" className="auth-input" />
                    <select name="gender" value={editingPersonData.gender} onChange={(e) => handleFormChange(e, setEditingPersonData)} className="auth-input">
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
+                     <option value="Male">Male</option>
+                     <option value="Female">Female</option>
+                     <option value="Other">Other</option>
                    </select>
                    <input type="date" name="birthDate" value={editingPersonData.birthDate} onChange={(e) => handleFormChange(e, setEditingPersonData)} className="auth-input" />
                    <div className="edit-actions">
-                      <button onClick={() => handleUpdatePerson(person.id)} className="action-button save">Save</button>
-                      <button onClick={() => setEditingPersonId(null)} className="action-button cancel">Cancel</button>
+                     <button onClick={() => handleUpdatePerson(person.id)} className="action-button save">Save</button>
+                     <button onClick={() => setEditingPersonId(null)} className="action-button cancel">Cancel</button>
                    </div>
                 </div>
               ) : (
@@ -171,9 +193,7 @@ function PersonsList({ user, connections, allPersons }) {
                     </p>
                     {person.birthDate && <p className="person-detail">Born: {person.birthDate}</p>}
                     {!person.claimedByUid && person.invitationCode && (
-                      <p className="invitation-code">
-                        Invite Code: <strong>{person.invitationCode}</strong>
-                      </p>
+                      <p className="invitation-code">Invite Code: <strong>{person.invitationCode}</strong></p>
                     )}
                   </div>
                   <div className="person-actions">
