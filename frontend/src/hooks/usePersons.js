@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, or } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext';
+import useConnections from './useConnections'; // <-- Import useConnections
 
-export default function usePersons(user, connections) {
+export default function usePersons() { // <-- connections removed from arguments
+  const { user } = useAuth();
+  const { accepted: connections } = useConnections(); // <-- Get connections inside the hook
+  
   const [allPersons, setAllPersons] = useState([]);
   const [userPerson, setUserPerson] = useState(null);
   const [error, setError] = useState('');
@@ -10,9 +15,11 @@ export default function usePersons(user, connections) {
   useEffect(() => {
     if (!user) {
       setAllPersons([]);
+      setUserPerson(null);
       return;
     };
     
+    // This logic now has a reliable source for 'connections'
     const networkUids = [
       user.uid,
       ...connections.map(c => c.requesterUid === user.uid ? c.recipientUid : c.requesterUid)

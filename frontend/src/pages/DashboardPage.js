@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { auth, db } from '../services/firebase';
+import { db } from '../services/firebase';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext';
 
-// Import all the hooks we need to gather data for the dashboard
+// Import all the hooks
 import useConnections from '../hooks/useConnections';
 import usePersons from '../hooks/usePersons';
 import useFamilyWall from '../hooks/useFamilyWall';
@@ -22,10 +23,12 @@ const StatCard = ({ title, value, icon, color }) => (
 );
 
 export default function DashboardPage() {
-  const user = auth.currentUser;
-  const { accepted: connections, incoming: pendingRequests } = useConnections(user);
-  const { allPersons } = usePersons(user, connections);
-  const { posts } = useFamilyWall(user, connections);
+  const { user } = useAuth();
+  
+  // Notice the calls are simpler now, no props being passed between them
+  const { incoming: pendingRequests } = useConnections();
+  const { allPersons } = usePersons();
+  const { posts } = useFamilyWall();
 
   const [localError, setLocalError] = React.useState('');
 

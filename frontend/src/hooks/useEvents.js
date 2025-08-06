@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext';
+import useConnections from './useConnections'; // <-- Import useConnections
 
-export default function useEvents(user, connections) {
+export default function useEvents() { // <-- connections removed
+  const { user } = useAuth();
+  const { accepted: connections } = useConnections(); // <-- Get connections inside
   const [customEvents, setCustomEvents] = useState([]);
 
   useEffect(() => {

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, or } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext'; // 1. Import useAuth
 
-export default function useConnections(user) {
-  // The state will now hold an object with different categories of connections
+export default function useConnections() { // 2. Remove user from arguments
+  const { user } = useAuth(); // 3. Get user from the context
+  
   const [connectionsData, setConnectionsData] = useState({
     accepted: [],
     incoming: [],

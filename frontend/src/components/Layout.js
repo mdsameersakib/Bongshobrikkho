@@ -2,13 +2,14 @@ import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTachometerAlt, faUsers, faSitemap, faNewspaper, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
+import { useAuth } from '../context/AuthContext'; // 1. Import useAuth
 
 // A helper component for our sidebar links to handle the "active" state styling
 const SidebarLink = ({ to, icon, children }) => {
   const linkClasses = "flex items-center p-3 my-1 rounded-lg text-gray-600 font-medium transition-all duration-200";
   const activeLinkClasses = "bg-teal-700 text-white shadow-lg";
   const hoverClasses = "hover:bg-gray-200 hover:text-gray-800";
-
+  
   return (
     <NavLink
       to={to}
@@ -22,7 +23,8 @@ const SidebarLink = ({ to, icon, children }) => {
   );
 };
 
-const Layout = ({ user, handleLogout }) => {
+const Layout = ({ handleLogout }) => {
+  const { user } = useAuth();
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
       {/* Sidebar */}

@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { db, auth } from '../services/firebase';
+import { db } from '../services/firebase'; // <-- FIXED: 'auth' import removed
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext'; // <-- We now get the user from here
 import useComments from '../hooks/useComments';
 
 export default function CommentSection({ postId }) {
-  const user = auth.currentUser;
+  const { user } = useAuth(); // Get user from the context
   const comments = useComments(postId);
   const [newComment, setNewComment] = useState('');
 
   const handleAddComment = async (e) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !user) return;
 
     try {
       await addDoc(collection(db, `posts/${postId}/comments`), {
@@ -39,16 +40,18 @@ export default function CommentSection({ postId }) {
       ))}
 
       {/* Add new comment form */}
-      <form onSubmit={handleAddComment} className="flex items-center space-x-3">
-        <img src={`https://placehold.co/32x32/2c7a7b/ffffff?text=${user?.email[0].toUpperCase()}`} alt="User Avatar" className="h-8 w-8 rounded-full" />
-        <input 
-          type="text" 
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Write a comment..." 
-          className="w-full bg-gray-100 border-none rounded-full py-2 px-4 focus:ring-2 focus:ring-teal-500"
-        />
-      </form>
+      {user && (
+        <form onSubmit={handleAddComment} className="flex items-center space-x-3">
+          <img src={`https://placehold.co/32x32/2c7a7b/ffffff?text=${user.email[0].toUpperCase()}`} alt="User Avatar" className="h-8 w-8 rounded-full" />
+          <input 
+            type="text" 
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Write a comment..." 
+            className="w-full bg-gray-100 border-none rounded-full py-2 px-4 focus:ring-2 focus:ring-teal-500"
+          />
+        </form>
+      )}
     </div>
   );
 }
