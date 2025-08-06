@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext';
+import useConnections from './useConnections'; // <-- Import useConnections
 
-export default function useFamilyWall(user, connections) {
+export default function useFamilyWall() { // <-- connections removed
+  const { user } = useAuth();
+  const { accepted: connections } = useConnections(); // <-- Get connections inside
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState('');
 

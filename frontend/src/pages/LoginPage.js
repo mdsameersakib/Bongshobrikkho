@@ -6,14 +6,25 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword
 } from "firebase/auth";
-import { doc, collection, writeBatch, Timestamp } from 'firebase/firestore';
+import { 
+  doc, 
+  collection, 
+  writeBatch, 
+  Timestamp,
+  query,
+  where,
+  getDocs,
+  or,
+  and
+} from 'firebase/firestore';
 
-export default function LoginPage({ user }) {
+import { useAuth } from '../context/AuthContext'; // Import useAuth
+
+export default function LoginPage() { // user prop removed
+  const { user } = useAuth(); // Get user from context
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // This useEffect hook will redirect the user to the dashboard
-  // if they are already logged in and somehow land on the login page.
   useEffect(() => {
     if (user) {
       navigate('/dashboard');
@@ -26,37 +37,86 @@ export default function LoginPage({ user }) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const newUser = userCredential.user;
 
-      // Note: This uses the simple registration logic. We will upgrade this
-      // to handle invitation codes again once the core pages are built.
-      const personRef = doc(collection(db, "persons"));
-      const userRef = doc(db, "users", newUser.uid);
-      const batch = writeBatch(db);
-      
-      batch.set(personRef, {
-        firstName: newUser.email.split('@')[0],
-        lastName: '',
-        gender: 'Other',
-        birthDate: '',
-        creatorUid: newUser.uid,
-        claimedByUid: newUser.uid,
-        invitationCode: null,
-        parents: [],
-        children: [],
-        spouse: null,
-      });
-      batch.set(userRef, {
-        uid: newUser.uid,
-        email: newUser.email,
-        displayName: newUser.email.split('@')[0],
-        personId: personRef.id,
-        createdAt: Timestamp.now(),
-      });
-      
-      await batch.commit();
-      // After a successful registration, the listener in App.js will detect the new user
-      // and automatically navigate to the dashboard.
+      if (invitationCode) {
+        // --- RESTORED: Advanced "Claim Profile" and "Web of Trust" Logic ---
+        const q = query(collection(db, "persons"), where("invitationCode", "==", invitationCode.toUpperCase()));
+        const personSnapshot = await getDocs(q);
+
+        if (personSnapshot.empty) throw new Error("Invalid invitation code.");
+        
+        const personDoc = personSnapshot.docs[0];
+        const personData = personDoc.data();
+
+        if (personData.claimedByUid) throw new Error("This invitation has already been used.");
+        
+        const creatorUid = personData.creatorUid;
+        const connectionsQuery = query(
+          collection(db, "connections"),
+          and(
+            or(
+              where("requesterUid", "==", creatorUid),
+              where("recipientUid", "==", creatorUid)
+            ),
+            where("status", "==", "accepted")
+          )
+        );
+        const connectionsSnapshot = await getDocs(connectionsQuery);
+        
+        const networkUids = new Set([creatorUid]);
+        connectionsSnapshot.forEach(doc => {
+            const data = doc.data();
+            networkUids.add(data.requesterUid);
+            networkUids.add(data.recipientUid);
+        });
+
+        const batch = writeBatch(db);
+        
+        const personRef = doc(db, "persons", personDoc.id);
+        batch.update(personRef, { claimedByUid: newUser.uid, email: newUser.email }); 
+        
+        const userRef = doc(db, "users", newUser.uid);
+        batch.set(userRef, {
+          uid: newUser.uid, email: newUser.email,
+          displayName: personData.firstName || newUser.email,
+          personId: personDoc.id, createdAt: Timestamp.now(),
+        });
+
+        networkUids.forEach(uid => {
+            if (uid !== newUser.uid) {
+                const connectionRef = doc(collection(db, "connections"));
+                batch.set(connectionRef, {
+                    requesterUid: uid, recipientUid: newUser.uid,
+                    status: 'accepted', createdAt: Timestamp.now(),
+                });
+            }
+        });
+        
+        await batch.commit();
+
+      } else {
+        // Standard registration for a new user creating their own tree
+        const personRef = doc(collection(db, "persons"));
+        const userRef = doc(db, "users", newUser.uid);
+        const batch = writeBatch(db);
+        
+        batch.set(personRef, {
+          firstName: newUser.email.split('@')[0], lastName: '', gender: 'Other', birthDate: '',
+          creatorUid: newUser.uid, claimedByUid: newUser.uid, invitationCode: null,
+          parents: [], children: [], spouse: null,
+        });
+        batch.set(userRef, {
+          uid: newUser.uid, email: newUser.email,
+          displayName: newUser.email.split('@')[0],
+          personId: personRef.id, createdAt: Timestamp.now(),
+        });
+        
+        await batch.commit();
+      }
     } catch (err) {
       setError(err.message);
+      if (auth.currentUser && auth.currentUser.email === email) {
+        await auth.currentUser.delete().catch(e => console.error("Failed to cleanup user:", e));
+      }
     }
   };
 
@@ -64,8 +124,6 @@ export default function LoginPage({ user }) {
     setError('');
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // After a successful login, the listener in App.js will detect the user
-      // and automatically navigate to the dashboard.
     } catch (err) {
       setError(err.message);
     }
