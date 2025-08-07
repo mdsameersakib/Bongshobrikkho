@@ -1,19 +1,18 @@
-import { useState } from 'react';
-import { db } from '../services/firebase';
+import { useState, useCallback } from 'react';
+import { db, auth } from '../services/firebase';
 import {
   collection, doc, writeBatch, arrayUnion, deleteDoc, updateDoc,
   query, where, getDocs, Timestamp, addDoc
 } from 'firebase/firestore';
-import { useAuth } from '../context/AuthContext';
+
 import useConnections from './useConnections';
 import usePersons from './usePersons';
 
 export default function useFamilyList() {
-  const { user } = useAuth();  
+  const [user] = useState(auth.currentUser);
   const { accepted: connections, outgoing: outgoingRequests } = useConnections();
   const { allPersons, userPerson, error: dataError } = usePersons();
-   
-  // --- STATE MANAGEMENT ---
+  
   const [isAdding, setIsAdding] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [personToModify, setPersonToModify] = useState(null);
@@ -21,38 +20,79 @@ export default function useFamilyList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searchMessage, setSearchMessage] = useState('');
-  
-  // --- LOGIC (HANDLER FUNCTIONS) ---
+
   const handleSaveRelationship = async (existingPersonId, relationshipType, newPersonData) => {
     setLocalError('');
     try {
       const batch = writeBatch(db);
       const invitationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const newPersonRef = doc(collection(db, "persons"));
-      const baseNewPerson = { ...newPersonData, creatorUid: user.uid, claimedByUid: null, invitationCode, parents: [], children: [], spouse: null };
+      const baseNewPerson = { ...newPersonData, creatorUid: user.uid, claimedByUid: null, invitationCode, fatherId: null, motherId: null, children: [], spouse: null };
       const existingPersonRef = doc(db, "persons", existingPersonId);
       const existingPerson = allPersons.find(p => p.id === existingPersonId);
+
       if (relationshipType === "child") {
-        batch.set(newPersonRef, { ...baseNewPerson, parents: arrayUnion(existingPersonId) });
+        const childUpdate = {};
+        if (existingPerson.gender === 'Male') {
+          childUpdate.fatherId = existingPersonId;
+        } else if (existingPerson.gender === 'Female') {
+          childUpdate.motherId = existingPersonId;
+        }
+        batch.set(newPersonRef, { ...baseNewPerson, ...childUpdate });
         batch.update(existingPersonRef, { children: arrayUnion(newPersonRef.id) });
+        
         if (existingPerson?.spouse) {
-          const spouseRef = doc(db, "persons", existingPerson.spouse);
-          batch.update(newPersonRef, { parents: arrayUnion(existingPerson.spouse) });
-          batch.update(spouseRef, { children: arrayUnion(newPersonRef.id) });
+          const spouse = allPersons.find(p => p.id === existingPerson.spouse);
+          if (spouse) {
+            const spouseUpdate = {};
+            if (spouse.gender === 'Male') {
+              spouseUpdate.fatherId = existingPerson.spouse;
+            } else if (spouse.gender === 'Female') {
+              spouseUpdate.motherId = existingPerson.spouse;
+            }
+            batch.update(newPersonRef, spouseUpdate);
+            batch.update(doc(db, "persons", existingPerson.spouse), { children: arrayUnion(newPersonRef.id) });
+          }
         }
       } else if (relationshipType === "father" || relationshipType === "mother") {
+        if ((relationshipType === 'father' && existingPerson.fatherId) || (relationshipType === 'mother' && existingPerson.motherId)) {
+            setLocalError(`This person already has a ${relationshipType}.`);
+            return;
+        }
+        
+        const parentUpdate = {};
+        if (newPersonData.gender === 'Male') {
+            if (existingPerson.fatherId) { setLocalError("This person already has a father."); return; }
+            parentUpdate.fatherId = newPersonRef.id;
+        } else { // Female
+            if (existingPerson.motherId) { setLocalError("This person already has a mother."); return; }
+            parentUpdate.motherId = newPersonRef.id;
+        }
+
         batch.set(newPersonRef, { ...baseNewPerson, children: arrayUnion(existingPersonId) });
-        batch.update(existingPersonRef, { parents: arrayUnion(newPersonRef.id) });
+        batch.update(existingPersonRef, parentUpdate);
+
+        const otherParentId = newPersonData.gender === 'Male' ? existingPerson.motherId : existingPerson.fatherId;
+        if (otherParentId) {
+            const otherParentRef = doc(db, "persons", otherParentId);
+            batch.update(newPersonRef, { spouse: otherParentId });
+            batch.update(otherParentRef, { spouse: newPersonRef.id });
+        }
       } else if (relationshipType === "spouse") {
         batch.set(newPersonRef, { ...baseNewPerson, spouse: existingPersonId });
         batch.update(existingPersonRef, { spouse: newPersonRef.id });
       } else if (relationshipType === "sibling") {
-        if (!existingPerson?.parents || existingPerson.parents.length === 0) { setLocalError("Cannot add a sibling to someone with no parents."); return; }
-        batch.set(newPersonRef, { ...baseNewPerson, parents: existingPerson.parents });
-        existingPerson.parents.forEach(parentId => {
-          const parentRef = doc(db, "persons", parentId);
-          batch.update(parentRef, { children: arrayUnion(newPersonRef.id) });
-        });
+        if (!existingPerson?.fatherId && !existingPerson?.motherId) {
+          setLocalError("Cannot add a sibling to someone with no parents."); return;
+        }
+        const siblingUpdate = {
+            fatherId: existingPerson.fatherId || null,
+            motherId: existingPerson.motherId || null,
+        };
+        batch.set(newPersonRef, { ...baseNewPerson, ...siblingUpdate });
+        
+        if (existingPerson.fatherId) batch.update(doc(db, "persons", existingPerson.fatherId), { children: arrayUnion(newPersonRef.id) });
+        if (existingPerson.motherId) batch.update(doc(db, "persons", existingPerson.motherId), { children: arrayUnion(newPersonRef.id) });
       }
       await batch.commit();
       setIsAdding(false);
@@ -109,70 +149,52 @@ export default function useFamilyList() {
     return 'None';
   };
   
-  // --- FULLY UPGRADED relationship detection logic as requested ---
-  const getRelationshipToUser = (person) => {
+  const getRelationshipToUser = useCallback((person) => {
     if (!userPerson || person.id === userPerson.id) return "You";
 
-    const myParents = userPerson.parents || [];
-    const theirParents = person.parents || [];
+    const myFatherId = userPerson.fatherId;
+    const myMotherId = userPerson.motherId;
 
-    if (myParents.includes(person.id)) return person.gender === 'Male' ? 'Father' : 'Mother';
+    if (myFatherId === person.id) return 'Father';
+    if (myMotherId === person.id) return 'Mother';
+
     if (userPerson.children?.includes(person.id)) return person.gender === 'Male' ? 'Son' : 'Daughter';
     if (userPerson.spouse === person.id || person.spouse === userPerson.id) return person.gender === 'Male' ? 'Husband' : 'Wife';
-    if (myParents.length > 0 && theirParents.length > 0 && myParents.some(pId => theirParents.includes(pId))) {
+
+    const hasSharedFather = myFatherId && myFatherId === person.fatherId;
+    const hasSharedMother = myMotherId && myMotherId === person.motherId;
+    if (hasSharedFather || hasSharedMother) {
         return person.gender === 'Male' ? 'Brother' : 'Sister';
     }
-    if (myParents.length > 0) {
-        for (const parentId of myParents) {
-            const parent = allPersons.find(p => p.id === parentId);
-            if (parent?.parents?.includes(person.id)) {
-                return person.gender === 'Male' ? 'Grandfather' : 'Grandmother';
-            }
-        }
+    
+    // Grandparent check
+    const myFather = allPersons.find(p => p.id === myFatherId);
+    const myMother = allPersons.find(p => p.id === myMotherId);
+    if (myFather?.fatherId === person.id || myFather?.motherId === person.id || myMother?.fatherId === person.id || myMother?.motherId === person.id) {
+        return person.gender === 'Male' ? 'Grandfather' : 'Grandmother';
     }
-    if (userPerson.children?.length > 0) {
-        for (const childId of userPerson.children) {
-            if (theirParents.includes(childId)) {
-                return person.gender === 'Male' ? 'Grandson' : 'Granddaughter';
-            }
-        }
+
+    // Grandchild check
+    if (userPerson.children?.includes(person.fatherId) || userPerson.children?.includes(person.motherId)) {
+        return person.gender === 'Male' ? 'Grandson' : 'Granddaughter';
     }
+    
+    // In-law check
     if (userPerson.spouse) {
         const spouse = allPersons.find(p => p.id === userPerson.spouse);
         if (spouse) {
-            if (spouse.parents?.includes(person.id)) return person.gender === 'Male' ? 'Father-in-law' : 'Mother-in-law';
-            if (spouse.parents?.length > 0 && theirParents.length > 0 && spouse.parents.some(pId => theirParents.includes(pId))) {
+            if (spouse.fatherId === person.id || spouse.motherId === person.id) {
+                return person.gender === 'Male' ? 'Father-in-law' : 'Mother-in-law';
+            }
+            const spouseHasSharedParent = (spouse.fatherId && spouse.fatherId === person.fatherId) || (spouse.motherId && spouse.motherId === person.motherId);
+            if(spouseHasSharedParent) {
                 return person.gender === 'Male' ? 'Brother-in-law' : 'Sister-in-law';
             }
         }
     }
-    if (myParents.length > 0) {
-        for (const parentId of myParents) {
-            const myParent = allPersons.find(p => p.id === parentId);
-            if (myParent) {
-                if (myParent.parents?.length > 0 && person.parents?.length > 0 && myParent.parents.some(pId => person.parents.includes(pId))) {
-                    return person.gender === 'Male' ? 'Uncle' : 'Aunt';
-                }
-                if (person.parents?.length > 0) {
-                   for (const theirParentId of person.parents) {
-                       const theirParent = allPersons.find(p => p.id === theirParentId);
-                       if (theirParent && myParent.parents?.some(pId => theirParent.parents?.includes(pId))) {
-                           return 'Cousin';
-                       }
-                   }
-                }
-            }
-        }
-    }
-    const mySiblings = allPersons.filter(p => p.id !== userPerson.id && p.parents?.length > 0 && myParents.some(pId => p.parents.includes(pId)));
-    for (const sibling of mySiblings) {
-        if (sibling.children?.includes(person.id)) {
-            return person.gender === 'Male' ? 'Nephew' : 'Niece';
-        }
-    }
-
+    
     return "Relative";
-  };
+  }, [userPerson, allPersons]);
   
   return {
     user, allPersons, userPerson, error: dataError || localError,
@@ -182,5 +204,5 @@ export default function useFamilyList() {
     handleSaveRelationship, handleDeletePerson, handleUpdatePerson,
     openAddModal, openEditModal, getRelationshipToUser,
     handleUserSearch, handleSendRequest, getConnectionStatus
-  };
+  }
 }
