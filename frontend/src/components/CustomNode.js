@@ -1,19 +1,16 @@
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 
-// This component defines the visual appearance of each person in the tree.
 export default function CustomNode({ data }) {
-  const genderClass = data.gender === 'Male' 
-    ? 'border-blue-500' 
-    : data.gender === 'Female' 
-    ? 'border-pink-500' 
-    : 'border-gray-500';
+  const genderClass = data.gender === 'Male' ? 'border-blue-500' : 'border-pink-500';
 
   return (
     <div className={`bg-white rounded-lg shadow-lg border-2 ${genderClass} p-3 w-52`}>
-      {/* These "Handles" are the connection points for the lines (edges) */}
-      <Handle type="target" position={Position.Top} className="!bg-gray-400" />
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-400" />
+      {/* Handles are the connection points for the lines (edges) */}
+      <Handle type="target" position={Position.Top} id="top" className="!bg-gray-400" />
+      <Handle type="source" position={Position.Bottom} id="bottom" className="!bg-gray-400" />
+      <Handle type="source" position={Position.Left} id="left" className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} id="right" className="!bg-gray-400" />
 
       <div className="flex items-center">
         <img 
