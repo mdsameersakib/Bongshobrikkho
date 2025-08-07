@@ -1,24 +1,20 @@
 import React, { useMemo, useCallback } from 'react';
 import ReactFlow, { 
-  Background, 
-  Controls, 
-  MiniMap, 
-  useNodesState, 
-  useEdgesState,
-  addEdge
+  Background, Controls, MiniMap, useNodesState, useEdgesState, addEdge
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 import usePersons from '../hooks/usePersons';
 import useFamilyList from '../hooks/useFamilyList';
 import CustomNode from '../components/CustomNode';
-import MarriageNode from '../components/MarriageNode'; // <-- Import the new component
+import MarriageNode from '../components/MarriageNode'; // <-- We are now using this
 
 const nodeTypes = {
   custom: CustomNode,
+  marriage: MarriageNode, // <-- Register our new marriage node type
 };
 
-// --- UPGRADED LAYOUT ENGINE with Marriage Node Logic ---
+// --- FINAL LAYOUT ENGINE with Marriage Nodes and Specific Handles ---
 const getLayoutedElements = (allPersons, getRelationshipToUser) => {
     if (!allPersons || allPersons.length === 0) return { initialNodes: [], initialEdges: [] };
     
@@ -64,7 +60,6 @@ const getLayoutedElements = (allPersons, getRelationshipToUser) => {
         const levelWidth = (levelNodes.length - 1) * horizontalSpacing;
         const startX = -levelWidth / 2;
         levelNodes.forEach((person, index) => {
-            // Create the main person node
             initialNodes.push({
                 id: person.id,
                 type: 'custom',
@@ -72,37 +67,37 @@ const getLayoutedElements = (allPersons, getRelationshipToUser) => {
                 data: { label: `${person.firstName} ${person.lastName}`, relationship: getRelationshipToUser(person), gender: person.gender },
             });
 
-            // If this person has a spouse, create a marriage node and edges
             if (person.spouse && personMap.has(person.spouse) && person.id < person.spouse) {
                 const spouse = personMap.get(person.spouse);
                 const spouseIndex = levelNodes.findIndex(p => p.id === spouse.id);
                 if (spouseIndex !== -1) {
                     const personX = startX + index * horizontalSpacing;
                     const spouseX = startX + spouseIndex * horizontalSpacing;
-                    
                     const marriageNodeId = `m-${person.id}-${spouse.id}`;
-                    const marriageNodeX = (personX + spouseX) / 2;
-
-                    // Add the marriage node
+                    
                     initialNodes.push({
                         id: marriageNodeId,
-                        type: 'default', // Using a default node for the small circle
-                        position: { x: marriageNodeX + 115, y: y + 25 },
-                        className: 'w-5 h-5 bg-gray-500 rounded-full border-2 border-white shadow-md',
+                        type: 'marriage',
+                        position: { x: (personX + spouseX) / 2 + 100, y: y + 20 },
+                        draggable: false,
                     });
 
-                    // Edges from spouses to marriage node
-                    initialEdges.push({ id: `e-${person.id}-${marriageNodeId}`, source: person.id, target: marriageNodeId, type: 'straight', style: { stroke: '#a0aec0', strokeWidth: 2 }});
-                    initialEdges.push({ id: `e-${spouse.id}-${marriageNodeId}`, source: spouse.id, target: marriageNodeId, type: 'straight', style: { stroke: '#a0aec0', strokeWidth: 2 }});
-
-                    // Edges from marriage node to children
+                    initialEdges.push({ id: `e-${person.id}-${marriageNodeId}`, source: person.id, sourceHandle: 'right', target: marriageNodeId, targetHandle: 'left', type: 'smoothstep', style: { stroke: '#a0aec0', strokeWidth: 2 }});
+                    initialEdges.push({ id: `e-${spouse.id}-${marriageNodeId}`, source: spouse.id, sourceHandle: 'left', target: marriageNodeId, targetHandle: 'right', type: 'smoothstep', style: { stroke: '#a0aec0', strokeWidth: 2 }});
+                    
                     const children = [...new Set([...(person.children || []), ...(spouse.children || [])])];
                     children.forEach(childId => {
                         if (personMap.has(childId)) {
-                             initialEdges.push({ id: `e-${marriageNodeId}-${childId}`, source: marriageNodeId, target: childId, type: 'smoothstep', style: { stroke: '#a0aec0', strokeWidth: 2 } });
+                             initialEdges.push({ id: `e-${marriageNodeId}-${childId}`, source: marriageNodeId, sourceHandle: 'bottom', target: childId, targetHandle: 'top', type: 'smoothstep', style: { stroke: '#a0aec0', strokeWidth: 2 } });
                         }
                     });
                 }
+            } else if (!person.spouse) { // Handle single parents
+                person.children?.forEach(childId => {
+                    if (personMap.has(childId)) {
+                        initialEdges.push({id: `e-${person.id}-${childId}`, source: person.id, sourceHandle: 'bottom', target: childId, targetHandle: 'top', type: 'smoothstep', style: { stroke: '#a0aec0', strokeWidth: 2 } });
+                    }
+                });
             }
         });
     });
@@ -125,7 +120,6 @@ export default function FamilyTreePage() {
   
     const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
     
-    // The rest of the component JSX is unchanged
     return (
         <>
             <header className="mb-6">
