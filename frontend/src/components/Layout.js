@@ -1,34 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTachometerAlt, faUsers, faSitemap, faNewspaper, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
-import { useAuth } from '../context/AuthContext'; // 1. Import useAuth
 
-// A helper component for our sidebar links to handle the "active" state styling
+// Import our new mobile components
+import MobileSidebar from './MobileSidebar';
+import MenuButton from './MenuButton';
+
 const SidebarLink = ({ to, icon, children }) => {
   const linkClasses = "flex items-center p-3 my-1 rounded-lg text-gray-600 font-medium transition-all duration-200";
   const activeLinkClasses = "bg-teal-700 text-white shadow-lg";
   const hoverClasses = "hover:bg-gray-200 hover:text-gray-800";
-  
+
   return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        `${linkClasses} ${isActive ? activeLinkClasses : hoverClasses}`
-      }
-    >
+    <NavLink to={to} className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : hoverClasses}`}>
       <FontAwesomeIcon icon={icon} className="w-5 mr-4 text-center" />
       <span>{children}</span>
     </NavLink>
   );
 };
 
-const Layout = ({ handleLogout }) => {
+export default function Layout({ handleLogout }) {
   const { user } = useAuth();
+  const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-lg flex-shrink-0 flex flex-col">
+      {/* --- Desktop Sidebar (Hidden on small screens) --- */}
+      <aside className="hidden md:flex md:w-64 bg-white shadow-lg flex-shrink-0 flex-col">
         <div className="p-6">
           <h1 className="text-2xl font-bold text-teal-700">BongshoBrikkho</h1>
         </div>
@@ -54,13 +54,21 @@ const Layout = ({ handleLogout }) => {
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 p-6 md:p-10 overflow-y-auto">
-        {/* The Outlet is where React Router will render the specific page component */}
-        <Outlet /> 
-      </main>
+      {/* --- Mobile Sidebar (Managed by state) --- */}
+      <MobileSidebar isOpen={isMobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
+
+      {/* --- Main Content Area --- */}
+      <div className="flex-1 flex flex-col">
+        {/* Top bar for mobile, with menu button */}
+        <header className="md:hidden bg-white shadow-md p-4 flex justify-between items-center">
+           <h1 className="text-xl font-bold text-teal-700">BongshoBrikkho</h1>
+           <MenuButton isOpen={isMobileSidebarOpen} onClick={() => setMobileSidebarOpen(!isMobileSidebarOpen)} />
+        </header>
+
+        <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+          <Outlet /> {/* Child pages will be rendered here */}
+        </main>
+      </div>
     </div>
   );
-};
-
-export default Layout;
+}
