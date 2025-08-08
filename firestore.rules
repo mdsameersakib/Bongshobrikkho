@@ -2,19 +2,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Rule for user profiles
     match /users/{userId} {
       allow read: if request.auth != null;
       allow create, update: if request.auth.uid == userId;
     }
 
-    // Rule for person documents in the tree
     match /persons/{personId} {
       allow read, create, update: if request.auth != null;
       allow delete: if request.auth != null && resource.data.creatorUid == request.auth.uid;
     }
 
-    // Rule for connections between users
     match /connections/{connectionId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null && (request.resource.data.requesterUid == request.auth.uid || (request.resource.data.recipientUid == request.auth.uid && request.resource.data.status == 'accepted'));
@@ -22,23 +19,24 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == resource.data.requesterUid;
     }
 
-    // Rule for Family Wall posts
     match /posts/{postId} {
       allow read, update: if request.auth != null;
       allow create: if request.auth != null && request.resource.data.authorUid == request.auth.uid;
       allow delete: if request.auth != null && resource.data.authorUid == request.auth.uid;
-
-      // Rule for comments on posts
       match /comments/{commentId} {
         allow read, create: if request.auth != null;
       }
     }
-
-    // --- NEW RULE for the 'events' collection ---
-    // Allows any logged-in user to create and read custom family events.
+    
     match /events/{eventId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
+    }
+
+    // --- NEW & IMPORTANT: Rule for the 'couples' collection ---
+    match /couples/{coupleId} {
+      // Allows any logged-in user to create and update couple documents.
+      allow read, create, update: if request.auth != null;
     }
   }
 }

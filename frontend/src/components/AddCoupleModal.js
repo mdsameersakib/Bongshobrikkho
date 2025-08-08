@@ -77,13 +77,13 @@ export default function AddCoupleModal({ person, relationshipType, onSave, onClo
             )}
             <hr/>
             <div>
-              <label htmlFor="marriageDate" className="block text-sm font-medium text-gray-700 mb-1">Marriage Date (Required)</label>
-              <input id="marriageDate" name="marriageDate" type="date" value={formData.marriageDate} onChange={handleFormChange} required className="w-full md:w-1/2 p-2 border border-gray-300 rounded-lg" />
+              <label htmlFor="marriageDate" className="block text-sm font-medium text-gray-700 mb-1">Marriage Date (Optional)</label>
+              <input id="marriageDate" name="marriageDate" type="date" value={formData.marriageDate} onChange={handleFormChange} className="w-full md:w-1/2 p-2 border border-gray-300 rounded-lg" />
             </div>
           </div>
           <div className="flex justify-end pt-6 border-t mt-6 space-x-3">
-            <button type="button" onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
-            <button type="submit" className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 shadow-md">Save</button>
+            <button type="button" onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300">Cancel</button>
+            <button type="submit" className="px-6 py-2 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 shadow-md">Save</button>
           </div>
         </form>
       </div>

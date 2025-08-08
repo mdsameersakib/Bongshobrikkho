@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react';
 import { db } from '../services/firebase';
-import {collection, doc, writeBatch, arrayUnion, deleteDoc, updateDoc, query, where, getDocs, Timestamp, addDoc} from 'firebase/firestore';
+import {
+  collection, doc, writeBatch, arrayUnion, deleteDoc, updateDoc,
+  query, where, getDocs, Timestamp, addDoc
+} from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import useConnections from './useConnections';
 import usePersons from './usePersons';
@@ -20,11 +23,16 @@ export default function useFamilyList() {
   const [searchMessage, setSearchMessage] = useState('');
 
   const createNewPersonObject = (data) => ({
-      firstName: data.firstName || '', lastName: data.lastName || '',
-      gender: data.gender || 'Other', birthDate: data.birthDate || '',
-      creatorUid: user.uid, claimedByUid: null,
+      firstName: data.firstName || '',
+      lastName: data.lastName || '',
+      gender: data.gender || 'Other',
+      birthDate: data.birthDate || '',
+      creatorUid: user.uid,
+      claimedByUid: null,
       invitationCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
-      parents: [], children: [], spouse: null,
+      parents: [],
+      children: [],
+      spouse: null,
   });
 
   const handleSaveCouple = async (person, type, formData) => {
@@ -65,7 +73,7 @@ export default function useFamilyList() {
 
             if (formData.marriageDate) {
                 const coupleRef = doc(collection(db, "couples"));
-                const childrenIds = person.children || []; // <-- FIX: Include existing children
+                const childrenIds = person.children || [];
                 const coupleData = person.gender === 'Male' 
                     ? { husbandId: person.id, wifeId: newSpouseRef.id, marriageDate: formData.marriageDate, childrenIds }
                     : { husbandId: newSpouseRef.id, wifeId: person.id, marriageDate: formData.marriageDate, childrenIds };
@@ -93,8 +101,6 @@ export default function useFamilyList() {
             baseNewPerson.parents = [existingPersonId];
             if (existingPerson.spouse) {
                 baseNewPerson.parents.push(existingPerson.spouse);
-                
-                // --- FIX: Update the couple document with the new child ---
                 const coupleQuery = query(collection(db, "couples"), where("husbandId", "in", [existingPersonId, existingPerson.spouse]), where("wifeId", "in", [existingPersonId, existingPerson.spouse]));
                 const coupleSnapshot = await getDocs(coupleQuery);
                 if (!coupleSnapshot.empty) {
@@ -109,7 +115,8 @@ export default function useFamilyList() {
             }
         } else if (relationshipType === "sibling") {
              if (!existingPerson?.parents || existingPerson.parents.length === 0) {
-                setLocalError("Cannot add a sibling to someone with no parents."); return;
+                setLocalError("Cannot add a sibling to someone with no parents.");
+                return;
             }
             baseNewPerson.parents = existingPerson.parents;
             batch.set(newPersonRef, baseNewPerson);
@@ -127,8 +134,8 @@ export default function useFamilyList() {
   };
 
   const handleDeletePerson = async (personId) => {
-    if (window.confirm("Are you sure?")) {
-      try { await deleteDoc(doc(db, "persons", personId)); }
+    if (window.confirm("Are you sure? This action cannot be undone.")) {
+      try { await deleteDoc(doc(db, "persons", personId)); } 
       catch (err) { setLocalError("Failed to delete person."); }
     }
   };
@@ -145,54 +152,13 @@ export default function useFamilyList() {
     setAddMode(type);
     setIsAdding(true);
   };
-
+  
   const openEditModal = (person) => {
     setPersonToModify(person);
     setIsEditing(true);
   };
+  
 
-  // const getRelationshipToUser = useCallback((person) => {
-  //   if (!userPerson || person.id === userPerson.id) return "You";
-  //   if (userPerson.parents?.includes(person.id)) return person.gender === 'Male' ? 'Father' : 'Mother';
-  //   if (userPerson.children?.includes(person.id)) return person.gender === 'Male' ? 'Son' : 'Daughter';
-  //   if (userPerson.spouse === person.id || person.spouse === userPerson.id) return person.gender === 'Male' ? 'Husband' : 'Wife';
-  //   if (userPerson.parents?.some(pId => person.parents?.includes(pId))) return person.gender === 'Male' ? 'Brother' : 'Sister';
-  //   return "Relative";
-  // }, [userPerson, allPersons]);
-
-  const handleUserSearch = async (e) => {
-    e.preventDefault();
-    if (!searchQuery) return;
-    setSearchMessage('Searching...');
-    setSearchResults([]);
-    setLocalError('');
-    try {
-      const q = query(collection(db, "users"), where("email", "==", searchQuery));
-      const querySnapshot = await getDocs(q);
-      const results = querySnapshot.docs.map(doc => doc.data()).filter(foundUser => foundUser.uid !== user.uid);
-      setSearchResults(results);
-      setSearchMessage(results.length === 0 ? 'No users found.' : '');
-    } catch (err) { setLocalError('An error occurred during search.'); }
-  };
-
-  const handleSendRequest = async (recipient) => {
-    try {
-      await addDoc(collection(db, "connections"), {
-        requesterUid: user.uid, requesterEmail: user.email,
-        recipientUid: recipient.uid, recipientEmail: recipient.email,
-        status: 'pending', createdAt: Timestamp.now(),
-      });
-      alert("Request Sent!");
-      setSearchResults([]); setSearchQuery(''); setSearchMessage('');
-    } catch (err) { setLocalError("Failed to send request."); }
-  };
-
-  const getConnectionStatus = (targetUid) => {
-    if (outgoingRequests.some(req => req.recipientUid === targetUid)) return 'Pending';
-    if (connections.some(con => con.requesterUid === targetUid || con.recipientUid === targetUid)) return 'Connected';
-    return 'None';
-  };
- 
   const getRelationshipToUser = useCallback((person) => {
     if (!userPerson || !person || person.id === userPerson.id) return "You";
 
@@ -301,6 +267,39 @@ export default function useFamilyList() {
     return "Relative";
   }, [userPerson, allPersons]);
 
+  
+  const handleUserSearch = async (e) => {
+    e.preventDefault();
+    if (!searchQuery) return;
+    setSearchMessage('Searching...');
+    setSearchResults([]);
+    setLocalError('');
+    try {
+      const q = query(collection(db, "users"), where("email", "==", searchQuery));
+      const querySnapshot = await getDocs(q);
+      const results = querySnapshot.docs.map(doc => doc.data()).filter(foundUser => foundUser.uid !== user.uid);
+      setSearchResults(results);
+      setSearchMessage(results.length === 0 ? 'No users found.' : '');
+    } catch (err) { setLocalError('An error occurred during search.'); }
+  };
+
+  const handleSendRequest = async (recipient) => {
+    try {
+      await addDoc(collection(db, "connections"), {
+        requesterUid: user.uid, requesterEmail: user.email,
+        recipientUid: recipient.uid, recipientEmail: recipient.email,
+        status: 'pending', createdAt: Timestamp.now(),
+      });
+      alert("Request Sent!");
+      setSearchResults([]); setSearchQuery(''); setSearchMessage('');
+    } catch (err) { setLocalError("Failed to send request."); }
+  };
+
+  const getConnectionStatus = (targetUid) => {
+    if (outgoingRequests.some(req => req.recipientUid === targetUid)) return 'Pending';
+    if (connections.some(con => con.requesterUid === targetUid || con.recipientUid === targetUid)) return 'Connected';
+    return 'None';
+  };
   
   return {
     user, allPersons, userPerson, error: dataError || localError,
