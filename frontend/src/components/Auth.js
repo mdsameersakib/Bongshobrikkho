@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 
 // This component now manages its own display mode (login or register)
-function Auth({ handleLogin, handleRegister, error }) {
+function Auth({ handleLogin, handleRegister, error, loading }) {
   // State to toggle between login and register modes
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [invitationCode, setInvitationCode] = useState('');
+
+  // --- NEW: State for additional user details ---
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [birthDate, setBirthDate] = useState('');
 
   const onLogin = (e) => {
     e.preventDefault();
@@ -15,8 +20,12 @@ function Auth({ handleLogin, handleRegister, error }) {
 
   const onRegister = (e) => {
     e.preventDefault();
-    handleRegister(email, password, invitationCode);
+    // Pass the new details to the handler function
+    handleRegister(email, password, invitationCode, { firstName, lastName, birthDate });
   };
+  
+  // --- NEW: Condition to show detailed fields ---
+  const showDetailFields = isRegisterMode && !invitationCode;
 
   return (
     <div className="w-full max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg">
@@ -35,6 +44,7 @@ function Auth({ handleLogin, handleRegister, error }) {
             placeholder="Enter your email"
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
             aria-label="Email address"
+            required
           />
         </div>
         <div>
@@ -47,10 +57,10 @@ function Auth({ handleLogin, handleRegister, error }) {
             placeholder="Enter your password"
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
             aria-label="Password"
+            required
           />
         </div>
 
-        {/* Invitation Code field, visible only in Register mode */}
         {isRegisterMode && (
           <div>
             <label htmlFor="invitationCode" className="sr-only">Invitation Code</label>
@@ -65,22 +75,53 @@ function Auth({ handleLogin, handleRegister, error }) {
             />
           </div>
         )}
+        
+        {/* --- NEW: Conditionally rendered detail fields --- */}
+        {showDetailFields && (
+            <div className="space-y-4 pt-4 border-t">
+                 <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="First Name"
+                    className="w-full p-3 border border-gray-300 rounded-lg"
+                    required
+                 />
+                 <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Last Name"
+                    className="w-full p-3 border border-gray-300 rounded-lg"
+                 />
+                 <div>
+                    <label htmlFor="birthDate" className="text-sm text-gray-500 px-1">Birthdate</label>
+                    <input
+                        id="birthDate"
+                        type="date"
+                        value={birthDate}
+                        onChange={(e) => setBirthDate(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg"
+                    />
+                 </div>
+            </div>
+        )}
+
 
         {/* Action Buttons */}
         <div className="button-group space-y-3">
           {isRegisterMode ? (
-            <button onClick={onRegister} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors">
-              Register
+            <button onClick={onRegister} disabled={loading} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors disabled:bg-gray-400">
+              {loading ? 'Registering...' : 'Register'}
             </button>
           ) : (
-            <button onClick={onLogin} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors">
-              Login
+            <button onClick={onLogin} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors disabled:bg-gray-400">
+              {loading ? 'Logging in...' : 'Login'}
             </button>
           )}
         </div>
       </form>
 
-      {/* Toggle between Login and Register modes */}
       <div className="mt-6 text-center">
         {isRegisterMode ? (
           <p className="text-gray-700">

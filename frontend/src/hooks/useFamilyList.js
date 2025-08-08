@@ -1,8 +1,7 @@
 import { useState, useCallback } from 'react';
 import { db } from '../services/firebase';
 import {
-  collection, doc, writeBatch, arrayUnion, deleteDoc, updateDoc,
-  query, where, getDocs, Timestamp, addDoc
+  collection, doc, writeBatch, arrayUnion, arrayRemove, updateDoc, query, where, getDocs, Timestamp, addDoc
 } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import useConnections from './useConnections';
@@ -133,10 +132,61 @@ export default function useFamilyList() {
     }
   };
 
-  const handleDeletePerson = async (personId) => {
-    if (window.confirm("Are you sure? This action cannot be undone.")) {
-      try { await deleteDoc(doc(db, "persons", personId)); } 
-      catch (err) { setLocalError("Failed to delete person."); }
+  const handleDeletePerson = async (personIdToDelete) => {
+    if (!window.confirm("Are you sure? This will permanently delete this person and update all related family members. This action cannot be undone.")) {
+      return;
+    }
+    
+    setLocalError('');
+    try {
+      const personToDelete = allPersons.find(p => p.id === personIdToDelete);
+      if (!personToDelete) throw new Error("Person not found in local data.");
+
+      const batch = writeBatch(db);
+
+      // 1. Update spouse: Set their spouse field to null
+      if (personToDelete.spouse) {
+        const spouseRef = doc(db, "persons", personToDelete.spouse);
+        batch.update(spouseRef, { spouse: null });
+      }
+
+      // 2. Update parents: Remove person from their children array
+      if (personToDelete.parents && personToDelete.parents.length > 0) {
+        personToDelete.parents.forEach(parentId => {
+          const parentRef = doc(db, "persons", parentId);
+          batch.update(parentRef, { children: arrayRemove(personIdToDelete) });
+        });
+      }
+
+      // 3. Update children: Remove person from their parents array
+      if (personToDelete.children && personToDelete.children.length > 0) {
+        personToDelete.children.forEach(childId => {
+          const childRef = doc(db, "persons", childId);
+          batch.update(childRef, { parents: arrayRemove(personIdToDelete) });
+        });
+      }
+      
+      // 4. Delete any couple documents this person is a part of
+      const coupleQuery = query(collection(db, "couples"), where("husbandId", "==", personIdToDelete));
+      const coupleQuery2 = query(collection(db, "couples"), where("wifeId", "==", personIdToDelete));
+      
+      const [husbandCouples, wifeCouples] = await Promise.all([
+          getDocs(coupleQuery),
+          getDocs(coupleQuery2)
+      ]);
+      
+      husbandCouples.forEach(doc => batch.delete(doc.ref));
+      wifeCouples.forEach(doc => batch.delete(doc.ref));
+
+      // 5. Finally, delete the person themselves
+      const personRef = doc(db, "persons", personIdToDelete);
+      batch.delete(personRef);
+
+      await batch.commit();
+      
+    } catch (err) {
+      console.error("Failed to delete person and clean up relations:", err);
+      setLocalError("Failed to delete person. Check console for details.");
     }
   };
 

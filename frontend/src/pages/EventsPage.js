@@ -1,11 +1,10 @@
 import React from 'react';
-import { auth } from '../services/firebase';
+import { useAuth } from '../context/AuthContext'; // <-- Import useAuth
 
 // Import our custom hooks
-import useConnections from '../hooks/useConnections';
 import usePersons from '../hooks/usePersons';
 import useEvents from '../hooks/useEvents';
-import useCategorizedEvents from '../hooks/useCategorizedEvents'; // <-- Our new logic hook
+import useCategorizedEvents from '../hooks/useCategorizedEvents';
 
 // Helper to format dates
 const formatDate = (dateStr) => {
@@ -14,17 +13,16 @@ const formatDate = (dateStr) => {
 };
 
 export default function EventsPage() {
-    const user = auth.currentUser;
+    const { user } = useAuth(); // <-- Get user from context
 
-    // 1. Gather raw data using our existing hooks
-    const { accepted: connections } = useConnections(user);
-    const { allPersons } = usePersons(user, connections);
-    const { customEvents } = useEvents(user, connections);
+    // --- REFACTORED: Hooks called without arguments ---
+    const { allPersons } = usePersons();
+    const { customEvents } = useEvents();
 
-    // 2. Process all data with our new logic hook
+    // Process all data with our logic hook
     const { upcoming, later, remembrance } = useCategorizedEvents(allPersons, customEvents, user);
 
-    // 3. Render the UI
+    // Render the UI
     return (
         <>
             <header className="flex justify-between items-center mb-8">
