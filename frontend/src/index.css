@@ -2,3 +2,36 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+/* Family tree canvas & edges */
+.tree-viewport-container {
+	position: relative;
+	width: 100%;
+	height: 80vh;
+	border: 1px solid rgb(226 232 240);
+	border-radius: 0.5rem;
+	overflow: hidden;
+	background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+	background-size: 20px 20px;
+	background-color: #ffffff;
+}
+
+.tree-canvas {
+	position: absolute;
+	inset: 0;
+	will-change: transform;
+}
+
+.edge-path {
+	stroke: #94a3b8; /* slate-400 */
+	stroke-width: 2px;
+	fill: none;
+	vector-effect: non-scaling-stroke;
+	stroke-linecap: round;
+}
+
+.edge-path.marriage {
+	stroke: #475569; /* slate-600 */
+	stroke-width: 3px;
+}
