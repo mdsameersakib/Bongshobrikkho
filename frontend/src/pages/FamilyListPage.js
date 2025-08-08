@@ -2,16 +2,18 @@ import React from 'react';
 import useFamilyList from '../hooks/useFamilyList';
 
 import AddCoupleModal from '../components/AddCoupleModal';
+import AddMemberModal from '../components/AddMemberModal'; // The modal for single relatives
 import EditMemberModal from '../components/EditMemberModal';
-import AddMemberModal from '../components/AddMemberModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPen, faTrash, faUserPlus, faHeart, faUsers } from '@fortawesome/free-solid-svg-icons';
 
 export default function FamilyListPage() {
   const logic = useFamilyList();
 
+  // This function intelligently decides which "Add" modal to show
   const renderAddModal = () => {
     if (!logic.isAdding) return null;
+
     if (logic.addMode === 'parents' || logic.addMode === 'spouse') {
       return (
         <AddCoupleModal 
@@ -22,6 +24,7 @@ export default function FamilyListPage() {
         />
       );
     } else {
+      // For 'child' or 'sibling', we use the simpler modal
       return (
         <AddMemberModal
           existingPerson={logic.personToModify}
@@ -129,7 +132,7 @@ export default function FamilyListPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button onClick={() => logic.openAddModal(person, 'child')} className="text-green-600 hover:text-green-900 mr-4" title="Add Child">
+                    <button onClick={() => logic.openAddModal(person, 'child')} className="text-green-600 hover:text-green-900 mr-4" title="Add Child or Sibling">
                       <FontAwesomeIcon icon={faUserPlus} />
                     </button>
                      <button onClick={() => logic.openAddModal(person, 'spouse')} className="text-pink-600 hover:text-pink-900 mr-4" title="Add Spouse">
