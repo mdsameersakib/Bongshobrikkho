@@ -81,5 +81,64 @@ export default function useTreeControls(containerRef, userNodeId) {
     }
   }, [userNodeId, centerOnNode]);
 
+  // Touch support (pan + pinch zoom)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let pinch = null; // {distance, centerX, centerY}
+    const getPoint = (t) => ({ x: t.clientX, y: t.clientY });
+    const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
+    const mid = (a,b) => ({ x:(a.x+b.x)/2, y:(a.y+b.y)/2 });
+
+    const onTouchStart = (e) => {
+      if (e.touches.length === 1) {
+        isPanning.current = true;
+        lastMousePos.current = getPoint(e.touches[0]);
+      } else if (e.touches.length === 2) {
+        isPanning.current = false;
+        const p1 = getPoint(e.touches[0]);
+        const p2 = getPoint(e.touches[1]);
+        const m = mid(p1,p2);
+        pinch = { distance: dist(p1,p2), centerX: m.x, centerY: m.y };
+      }
+    };
+    const onTouchMove = (e) => {
+      if (pinch && e.touches.length === 2) {
+        e.preventDefault();
+        const p1 = getPoint(e.touches[0]);
+        const p2 = getPoint(e.touches[1]);
+        const newDist = dist(p1,p2);
+        const scaleFactor = newDist / pinch.distance;
+        const rect = el.getBoundingClientRect();
+        const localX = pinch.centerX - rect.left;
+        const localY = pinch.centerY - rect.top;
+        setTransform(t => {
+          const newScale = Math.max(0.2, Math.min(2, t.scale * scaleFactor));
+          const newX = localX - (localX - t.x) * (newScale / t.scale);
+            const newY = localY - (localY - t.y) * (newScale / t.scale);
+          return { x: newX, y: newY, scale: newScale };
+        });
+        pinch.distance = newDist;
+      } else if (isPanning.current && e.touches.length === 1) {
+        const p = getPoint(e.touches[0]);
+        const dx = p.x - lastMousePos.current.x;
+        const dy = p.y - lastMousePos.current.y;
+        lastMousePos.current = p;
+        setTransform(t => ({ ...t, x: t.x + dx, y: t.y + dy }));
+      }
+    };
+    const onTouchEnd = () => { isPanning.current = false; pinch = null; };
+    el.addEventListener('touchstart', onTouchStart, { passive: false });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd);
+    el.addEventListener('touchcancel', onTouchEnd);
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [containerRef]);
+
   return { zoom, centerOnNode, transform, eventHandlers: { onMouseDown, onMouseUp, onMouseMove, onWheel, onMouseLeave: onMouseUp } };
 }
