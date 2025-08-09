@@ -8,30 +8,33 @@
 .tree-viewport-container {
 	position: relative;
 	width: 100%;
-	height: 80vh;
+	height: 100%; /* Changed to fill container */
 	border: 1px solid rgb(226 232 240);
-	border-radius: 0.5rem;
+	border-radius: 0.75rem; /* Slightly more rounded */
 	overflow: hidden;
-	background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+	background-image: radial-gradient(theme('colors.slate.200') 1px, transparent 1px);
 	background-size: 20px 20px;
-	background-color: #ffffff;
+	background-color: theme('colors.slate.50'); /* Softer background */
+    transition: background-size 0.2s ease-in-out;
 }
 
 .tree-canvas {
 	position: absolute;
-	inset: 0;
-	will-change: transform;
+	/* Inset removed, width/height and transform are now inline */
+	transform-origin: 0 0;
+    transition: transform 0.3s ease-out;
 }
 
 .edge-path {
 	stroke: #94a3b8; /* slate-400 */
-	stroke-width: 2px;
+	stroke-width: 2; /* SVG property, no units */
 	fill: none;
 	vector-effect: non-scaling-stroke;
 	stroke-linecap: round;
+    stroke-linejoin: round; /* Add for smoother corners */
 }
 
 .edge-path.marriage {
 	stroke: #475569; /* slate-600 */
-	stroke-width: 3px;
+	stroke-width: 2.5;
 }
