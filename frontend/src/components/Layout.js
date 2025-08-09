@@ -4,21 +4,23 @@ import { useAuth } from '../context/AuthContext';
 import usePersons from '../hooks/usePersons';
 import { getDisplayName } from '../utils/displayName';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTachometerAlt, faUsers, faSitemap, faNewspaper, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
+import { faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
+import { useTheme } from '../context/ThemeContext';
 
 // Import our new mobile components
 import MobileSidebar from './MobileSidebar';
 import MenuButton from './MenuButton';
 
-const SidebarLink = ({ to, icon, children }) => {
-  const linkClasses = "flex items-center p-3 my-1 rounded-lg text-gray-600 font-medium transition-all duration-200";
-  const activeLinkClasses = "bg-teal-700 text-white shadow-lg";
-  const hoverClasses = "hover:bg-gray-200 hover:text-gray-800";
+const SidebarLink = ({ to, children, emoji }) => {
+  const linkClasses = "flex items-center p-3 my-1 rounded-lg font-medium transition-colors duration-150 text-slate-600 dark:text-slate-300";
+  // Active: neutral surface (white / dark) with accent left bar & subtle shadow for contrast against accent-tinted background
+  const activeLinkClasses = "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow border-l-4 border-accent";
+  const hoverClasses = "hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white";
 
   return (
     <NavLink to={to} className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : hoverClasses}`}>
-      <FontAwesomeIcon icon={icon} className="w-5 mr-4 text-center" />
-      <span>{children}</span>
+  <span className="mr-3 text-lg leading-none" aria-hidden="true">{emoji}</span>
+  <span className="truncate">{children}</span>
     </NavLink>
   );
 };
@@ -28,22 +30,24 @@ export default function Layout({ handleLogout }) {
   const { allPersons } = usePersons();
   const displayName = getDisplayName(user?.uid, user?.email, allPersons);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const { resolvedMode, toggleMode } = useTheme();
 
   return (
-    <div className="flex h-screen bg-gray-100 font-sans">
+  <div className="app-shell flex h-screen font-sans bg-slate-50 dark:bg-slate-900 text-black dark:text-white transition-colors">
       {/* --- Desktop Sidebar (Hidden on small screens) --- */}
-      <aside className="hidden md:flex md:w-64 bg-white shadow-lg flex-shrink-0 flex-col">
+  <aside className="hidden md:flex md:w-64 bg-white dark:bg-slate-950 sidebar-accent shadow-lg flex-shrink-0 flex-col border-r border-slate-200 dark:border-slate-800">
         <div className="p-6">
-          <h1 className="text-2xl font-bold text-teal-700">BongshoBrikkho</h1>
+          <h1 className="text-2xl font-bold text-accent">BongshoBrikkho</h1>
         </div>
         <nav className="mt-6 px-4 flex-1">
-          <SidebarLink to="/dashboard" icon={faTachometerAlt}>Dashboard</SidebarLink>
-          <SidebarLink to="/family-list" icon={faUsers}>Family List</SidebarLink>
-          <SidebarLink to="/family-tree" icon={faSitemap}>Family Tree</SidebarLink>
-          <SidebarLink to="/family-wall" icon={faNewspaper}>Family Wall</SidebarLink>
-          <SidebarLink to="/events" icon={faCalendarAlt}>Events</SidebarLink>
+      <SidebarLink to="/dashboard" emoji="📊">Dashboard</SidebarLink>
+      <SidebarLink to="/family-list" emoji="👨‍👩‍👧‍👦">Family List</SidebarLink>
+      <SidebarLink to="/family-tree" emoji="🌳">Family Tree</SidebarLink>
+      <SidebarLink to="/family-wall" emoji="🗞️">Family Wall</SidebarLink>
+    <SidebarLink to="/events" emoji="🎉">Events</SidebarLink>
+    <SidebarLink to="/settings" emoji="⚙️">Settings</SidebarLink>
         </nav>
-        <div className="p-4 border-t border-gray-200">
+    <div className="p-4 border-t border-slate-200 dark:border-slate-800">
           <div className="flex items-center">
             <img 
               src={`https://placehold.co/40x40/2c7a7b/ffffff?text=${displayName?.[0] || 'U'}`} 
@@ -51,8 +55,8 @@ export default function Layout({ handleLogout }) {
               className="rounded-full h-10 w-10"
             />
             <div className="ml-3">
-              <p className="text-sm font-semibold text-gray-800 truncate">{displayName}</p>
-              <button onClick={handleLogout} className="text-xs text-red-600 hover:underline">Logout</button>
+      <p className="text-sm font-semibold truncate text-slate-800 dark:text-slate-100">{displayName}</p>
+    <button onClick={toggleMode} className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center gap-1">{resolvedMode==='dark'? <><FontAwesomeIcon icon={faSun}/> Light</>:<><FontAwesomeIcon icon={faMoon}/> Dark</>} Mode</button>
             </div>
           </div>
         </div>
@@ -64,12 +68,17 @@ export default function Layout({ handleLogout }) {
       {/* --- Main Content Area --- */}
       <div className="flex-1 flex flex-col">
         {/* Top bar for mobile, with menu button */}
-        <header className="md:hidden bg-white shadow-md p-4 flex justify-between items-center">
-           <h1 className="text-xl font-bold text-teal-700">BongshoBrikkho</h1>
-           <MenuButton isOpen={isMobileSidebarOpen} onClick={() => setMobileSidebarOpen(!isMobileSidebarOpen)} />
+        <header className="md:hidden bg-white dark:bg-slate-950 shadow-md p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
+           <h1 className="text-xl font-bold text-accent">BongshoBrikkho</h1>
+           <div className="flex items-center gap-3">
+             <button onClick={toggleMode} className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">
+               <FontAwesomeIcon icon={resolvedMode==='dark'? faSun : faMoon} />
+             </button>
+             <MenuButton isOpen={isMobileSidebarOpen} onClick={() => setMobileSidebarOpen(!isMobileSidebarOpen)} />
+           </div>
         </header>
 
-        <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+  <main className="flex-1 p-6 md:p-10 overflow-y-auto">
           <Outlet /> {/* Child pages will be rendered here */}
         </main>
       </div>

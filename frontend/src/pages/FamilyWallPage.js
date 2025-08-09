@@ -34,8 +34,8 @@ export default function FamilyWallPage() {
   return (
     <>
       <header className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-800">Family Wall</h2>
-        <p className="text-gray-500 mt-1">
+        <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Family Wall</h2>
+        <p className="text-slate-500 dark:text-slate-400 mt-1">
           See what everyone in the family is up to.
         </p>
       </header>
@@ -48,7 +48,7 @@ export default function FamilyWallPage() {
 
       <div className="max-w-3xl mx-auto">
         {user && (
-          <div className="bg-white p-4 rounded-xl shadow-md mb-8">
+          <div className="bg-white dark:bg-slate-950 p-4 rounded-xl shadow-md mb-8">
             <div className="flex items-start space-x-4">
               <img
                 src={`https://placehold.co/40x40/2c7a7b/ffffff?text=${user.email?.[0].toUpperCase()}`}
@@ -56,7 +56,7 @@ export default function FamilyWallPage() {
                 className="h-10 w-10 rounded-full"
               />
               <textarea
-                className="w-full border-none p-2 text-gray-700 focus:ring-0 placeholder-gray-400"
+                className="w-full border-none p-2 text-slate-700 dark:text-slate-200 focus:ring-0 placeholder-slate-400 dark:placeholder-slate-500 bg-transparent"
                 rows="3"
                 placeholder={`What's on your mind, ${myName}?`}
                 value={newPostContent}
@@ -67,7 +67,7 @@ export default function FamilyWallPage() {
               <button
                 onClick={handleCreatePost}
                 disabled={loading}
-                className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="btn btn-primary font-semibold py-2 px-6 rounded-lg shadow transition-transform transform hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? 'Posting...' : 'Post'}
               </button>
@@ -84,7 +84,7 @@ export default function FamilyWallPage() {
             const hahaCount = getReactionCount(reactions, 'haha');
 
             return (
-              <div key={post.id} className="bg-white p-6 rounded-xl shadow-md">
+        <div key={post.id} className="bg-white dark:bg-slate-950 p-6 rounded-xl shadow-md">
                 <div className="flex items-center mb-4">
                   <img
                     src={`https://placehold.co/48x48/16a34a/ffffff?text=${(post.authorName||post.authorEmail||'U')[0].toUpperCase()}`}
@@ -92,26 +92,26 @@ export default function FamilyWallPage() {
                     className="h-12 w-12 rounded-full object-cover"
                   />
                   <div className="ml-4">
-                    <p className="font-semibold text-gray-900">{post.authorName || post.authorEmail}</p>
-                    <p className="text-xs text-gray-500">
+          <p className="font-semibold text-slate-900 dark:text-slate-100">{post.authorName || post.authorEmail}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
                       {post.createdAt
                         ? new Date(post.createdAt.toDate()).toLocaleString()
                         : 'Just now'}
                     </p>
                   </div>
                 </div>
-                <p className="text-gray-700 mb-4 whitespace-pre-wrap">
+        <p className="text-slate-700 dark:text-slate-200 mb-4 whitespace-pre-wrap">
                   {post.content}
                 </p>
 
                 {user && (
-                  <div className="flex items-center space-x-4 border-t pt-2">
+      <div className="flex items-center space-x-4 border-t border-slate-200 dark:border-slate-800 pt-2">
                     <button
                       onClick={() => handleReaction(post.id, 'like')}
                       className={`reaction-btn text-sm flex items-center space-x-2 transition-colors ${
                         currentUserReaction === 'like'
-                          ? 'text-blue-600 font-bold'
-                          : 'text-gray-500 hover:text-blue-600'
+        ? 'text-blue-600 font-semibold'
+        : 'text-slate-500 dark:text-slate-400 hover:text-blue-600'
                       }`}
                     >
                       <i className="far fa-thumbs-up"></i>
@@ -121,8 +121,8 @@ export default function FamilyWallPage() {
                       onClick={() => handleReaction(post.id, 'love')}
                       className={`reaction-btn text-sm flex items-center space-x-2 transition-colors ${
                         currentUserReaction === 'love'
-                          ? 'text-red-500 font-bold'
-                          : 'text-gray-500 hover:text-red-500'
+        ? 'text-red-500 font-semibold'
+        : 'text-slate-500 dark:text-slate-400 hover:text-red-500'
                       }`}
                     >
                       <i className="far fa-heart"></i>
@@ -132,8 +132,8 @@ export default function FamilyWallPage() {
                       onClick={() => handleReaction(post.id, 'haha')}
                       className={`reaction-btn text-sm flex items-center space-x-2 transition-colors ${
                         currentUserReaction === 'haha'
-                          ? 'text-yellow-500 font-bold'
-                          : 'text-gray-500 hover:text-yellow-500'
+        ? 'text-yellow-500 font-semibold'
+        : 'text-slate-500 dark:text-slate-400 hover:text-yellow-500'
                       }`}
                     >
                       <i className="far fa-laugh-squint"></i>
@@ -147,7 +147,7 @@ export default function FamilyWallPage() {
             );
           })}
           {posts.length === 0 && (
-            <p className="text-center text-gray-500">
+            <p className="text-center text-slate-500 dark:text-slate-400">
               The wall is empty. Be the first to post!
             </p>
           )}

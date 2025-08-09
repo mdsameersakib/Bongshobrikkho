@@ -23,7 +23,7 @@ export default function TreeCanvas({ layout }) {
 
   return (
     // The event handlers are now attached to this container div
-    <div
+  <div
       ref={containerRef}
       className="tree-viewport-container"
       style={{ backgroundSize: `${20 * transform.scale}px ${20 * transform.scale}px`, cursor: 'grab' }}
@@ -71,10 +71,10 @@ export default function TreeCanvas({ layout }) {
       </div>
 
       {/* UI Controls */}
-      <div className="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur p-1 rounded-lg shadow flex gap-1">
-        <button onClick={() => zoom('in')} className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-gray-100" title="Zoom In">+</button>
-        <button onClick={() => zoom('out')} className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-gray-100" title="Zoom Out">−</button>
-        <button onClick={centerOnNode} className="h-9 px-3 rounded-md hover:bg-gray-100 text-sm" title="Center on Me">Center</button>
+      <div className="absolute top-3 right-3 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-1 rounded-lg shadow flex gap-1 border border-slate-200 dark:border-slate-700">
+        <button onClick={() => zoom('in')} className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-black dark:text-white" title="Zoom In">+</button>
+        <button onClick={() => zoom('out')} className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-black dark:text-white" title="Zoom Out">−</button>
+        <button onClick={centerOnNode} className="h-9 px-3 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-sm text-black dark:text-white" title="Center on Me">Center</button>
       </div>
     </div>
   );
