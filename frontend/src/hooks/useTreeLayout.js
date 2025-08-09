@@ -45,23 +45,74 @@ export const calculateTreeLayout = (allPersons, userPerson, couples = []) => {
   const connected = units.filter((u) => u.depth !== undefined);
   if (!connected.length) return empty();
 
-  // Step 4: Position units level-by-level (No changes)
+  // Step 4: Position units with sibling clustering to prevent overlap and reduce edge crossings
   const unitWidth = (u) => u.type === 'couple' ? NODE_WIDTH * 2 + COUPLE_SPACING : NODE_WIDTH;
   const positions = new Map();
   const depths = [...new Set(connected.map((u) => u.depth))].sort((a, b) => a - b);
+
+  const centerOfUnit = (u) => {
+    const pos = positions.get(u.id);
+    if (!pos) return undefined;
+    return pos.x + unitWidth(u) / 2;
+  };
+
   depths.forEach((depth) => {
-    const levelUnits = connected.filter((u) => u.depth === depth).sort((a, b) => a.id.localeCompare(b.id));
+    const levelUnits = connected.filter(u => u.depth === depth);
+
+    // Build clusters: siblings (same parent set) stay together
+    const clusterMap = new Map();
+    for (const u of levelUnits) {
+      const parentIds = [...u.parentUnitIds];
+      const key = parentIds.length ? parentIds.sort().join('|') : `__solo_${u.id}`;
+      if (!clusterMap.has(key)) clusterMap.set(key, []);
+      clusterMap.get(key).push(u);
+    }
+    const clusters = [];
+    clusterMap.forEach((unitsArr, key) => {
+      // Anchor for cluster: average of parent centers if parents exist; else undefined
+      let anchor;
+      const first = unitsArr[0];
+      if (first.parentUnitIds.size) {
+        const centers = [...first.parentUnitIds].map(pid => {
+          const pu = connected.find(x => x.id === pid);
+          const pPos = positions.get(pid);
+          return (pu && pPos) ? pPos.x + unitWidth(pu)/2 : undefined;
+        }).filter(v => v != null);
+        if (centers.length) anchor = centers.reduce((a,c)=>a+c,0)/centers.length;
+      }
+      clusters.push({ key, units: unitsArr, anchor });
+    });
+
+    // Sort clusters by anchor (parents position) then fallback id
+    clusters.sort((a,b) => {
+      if (a.anchor != null && b.anchor != null) return a.anchor - b.anchor;
+      if (a.anchor != null) return -1;
+      if (b.anchor != null) return 1;
+      return a.key.localeCompare(b.key);
+    });
+
+    // Within each cluster, sort units by id to keep deterministic order
+    clusters.forEach(cl => cl.units.sort((a,b)=>a.id.localeCompare(b.id)));
+
     let cursorX = 0;
-    levelUnits.forEach((u) => {
-      let anchors = [];
-      if (depth > depths[0]) { anchors = [...u.parentUnitIds].map((pid) => { const pos = positions.get(pid); const pu = connected.find((x) => x.id === pid); return pos ? pos.x + unitWidth(pu) / 2 : null; }).filter((v) => v != null); } 
-      else if (depth < depths[depths.length - 1]) { anchors = [...u.childUnitIds].map((cid) => { const pos = positions.get(cid); const cu = connected.find((x) => x.id === cid); return pos ? pos.x + unitWidth(cu) / 2 : null; }).filter((v) => v != null); }
-      const w = unitWidth(u);
-      let x = anchors.length ? (Math.min(...anchors) + Math.max(...anchors)) / 2 - w / 2 : cursorX;
-      const prevPlacedUnits = levelUnits.filter(p => positions.has(p.id));
-      if (prevPlacedUnits.length) { const lastUnit = prevPlacedUnits[prevPlacedUnits.length - 1]; const lastPos = positions.get(lastUnit.id); const neededX = lastPos.x + unitWidth(lastUnit) + H_SPACING; if (x < neededX) x = neededX; }
-      positions.set(u.id, { x, y: depth * (NODE_HEIGHT + V_SPACING) });
-      cursorX = x + w + H_SPACING;
+    clusters.forEach(cl => {
+      const widths = cl.units.map(u => unitWidth(u));
+      const clusterWidth = widths.reduce((a,c)=>a+c,0) + H_SPACING * (cl.units.length - 1);
+      let startX;
+      if (cl.anchor != null) {
+        startX = cl.anchor - clusterWidth/2;
+      } else {
+        startX = cursorX;
+      }
+      // Prevent overlap with previous cluster
+      if (startX < cursorX) startX = cursorX;
+      // Place units
+      let xPos = startX;
+      cl.units.forEach((u,i) => {
+        positions.set(u.id, { x: xPos, y: depth * (NODE_HEIGHT + V_SPACING) });
+        xPos += widths[i] + H_SPACING;
+      });
+      cursorX = startX + clusterWidth + H_SPACING;
     });
   });
 

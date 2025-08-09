@@ -54,25 +54,24 @@ export default function useTreeControls(containerRef, userNodeId) {
   const centerOnNode = useCallback(() => {
     const container = containerRef.current;
     if (!container || !userNodeId) return;
-
-    // Use a timeout to ensure the node is in the DOM
-    setTimeout(() => {
-      const userNode = document.getElementById(userNodeId);
-      if (!userNode) return;
-
-      const containerRect = container.getBoundingClientRect();
-      const nodeX = userNode.offsetLeft + (userNode.offsetWidth / 2);
-      const nodeY = userNode.offsetTop + (userNode.offsetHeight / 2);
-      
-      setTransform(current => {
-          const newScale = Math.min(1, 0.8 / (Math.max(userNode.offsetWidth, userNode.offsetHeight) / Math.min(containerRect.width, containerRect.height)));
-          return {
-              scale: newScale,
-              x: (containerRect.width / 2) - (nodeX * newScale),
-              y: (containerRect.height / 2) - (nodeY * newScale),
-          };
-      });
-    }, 100);
+    const userNode = document.getElementById(userNodeId);
+    if (!userNode) return;
+    const containerRect = container.getBoundingClientRect();
+    // Read original layout coordinates (before transform) from data attributes
+    const baseX = parseFloat(userNode.getAttribute('data-x')) || 0;
+    const baseY = parseFloat(userNode.getAttribute('data-y')) || 0;
+    const nodeWidth = userNode.offsetWidth;
+    const nodeHeight = userNode.offsetHeight;
+    setTransform(cur => {
+      const scale = cur.scale; // keep current scale (or adjust if needed)
+      const centerTargetX = baseX + nodeWidth / 2;
+      const centerTargetY = baseY + nodeHeight / 2;
+      return {
+        ...cur,
+        x: containerRect.width / 2 - centerTargetX * scale,
+        y: containerRect.height / 2 - centerTargetY * scale
+      };
+    });
   }, [containerRef, userNodeId]);
   
   // Center on initial load
