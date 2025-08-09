@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { nextOccurrence, yearsSince, parseISODate } from '../utils/date';
 
 // This hook processes raw data (persons, couples & custom events) into categorized event lists
 // Signature extended to accept couples for authoritative anniversary sourcing.
@@ -15,34 +16,34 @@ export default function useCategorizedEvents(allPersons, customEvents, couples, 
             return;
         }
 
-        const allGeneratedEvents = [];
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+    const allGeneratedEvents = [];
+    const today = new Date();
+    today.setHours(0,0,0,0);
 
         const personMap = new Map(allPersons.map(p => [p.id, p]));
 
-        // 1. Process remembrance & birthdays from persons
+    // 1. Process remembrance & birthdays from persons
         allPersons.forEach(person => {
             if (person.deathDate) {
                 allGeneratedEvents.push({
                     type: 'remembrance',
                     date: person.deathDate,
                     personName: `${person.firstName} ${person.lastName}`,
-                    lifespan: `${new Date(person.birthDate).getFullYear()} - ${new Date(person.deathDate).getFullYear()}`
+            lifespan: `${parseISODate(person.birthDate)?.getFullYear() ?? ''} - ${parseISODate(person.deathDate)?.getFullYear() ?? ''}`
                 });
             } else if (person.birthDate) {
                 allGeneratedEvents.push({
                     type: 'birthday',
                     date: person.birthDate,
-                    personName: `${person.firstName} ${person.lastName}'s Birthday`,
-                    age: today.getFullYear() - new Date(person.birthDate).getFullYear()
+            personName: `${person.firstName} ${person.lastName}'s Birthday`,
+            age: yearsSince(person.birthDate, today)
                 });
             }
         });
 
         // 2. Anniversaries from couples collection (authoritative). Avoid duplicates with a set.
         const seenAnniversaryKeys = new Set();
-        couples?.forEach(c => {
+    couples?.forEach(c => {
             if (!c.marriageDate) return;
             const husband = personMap.get(c.husbandId);
             const wife = personMap.get(c.wifeId);
@@ -53,8 +54,8 @@ export default function useCategorizedEvents(allPersons, customEvents, couples, 
             allGeneratedEvents.push({
                 type: 'anniversary',
                 date: c.marriageDate,
-                personName: `${husband.firstName} & ${wife.firstName}'s Anniversary`,
-                years: today.getFullYear() - new Date(c.marriageDate).getFullYear()
+        personName: `${husband.firstName} & ${wife.firstName}'s Anniversary`,
+        years: yearsSince(c.marriageDate, today)
             });
         });
 
@@ -77,23 +78,20 @@ export default function useCategorizedEvents(allPersons, customEvents, couples, 
         const thirtyDaysFromNow = new Date(today);
         thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-        allGeneratedEvents.forEach(evt => {
-            if (evt.type === 'remembrance') {
-                remembrance.push(evt);
-                return;
-            }
-            // events repeat annually (birthdays, anniversaries); custom assumed single-date annual style for now
-            const base = new Date(evt.date + 'T00:00:00');
-            let next = new Date(base);
-            next.setFullYear(today.getFullYear());
-            if (next < today) next.setFullYear(today.getFullYear() + 1);
-            evt.displayDate = next;
-            if (next >= today && next <= thirtyDaysFromNow) {
-                upcoming.push(evt);
-            } else {
-                later.push(evt);
-            }
-        });
+                allGeneratedEvents.forEach(evt => {
+                    if (evt.type === 'remembrance') {
+                        remembrance.push(evt);
+                        return;
+                    }
+                    const next = nextOccurrence(evt.date, today);
+                    if (!next) return; // skip invalid
+                    evt.displayDate = next;
+                    if (next >= today && next <= thirtyDaysFromNow) {
+                        upcoming.push(evt);
+                    } else {
+                        later.push(evt);
+                    }
+                });
 
         // 5. Sort
         const sortByDate = (a,b) => a.displayDate - b.displayDate;

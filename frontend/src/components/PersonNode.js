@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDateDMY } from '../utils/date';
 
 export default function PersonNode({ person, relationship, style }) {
   const genderColor =
@@ -38,9 +39,7 @@ export default function PersonNode({ person, relationship, style }) {
               {relationship}
             </p>
           )}
-          <p className="text-xs text-gray-500 mt-1">
-            Born: {person.birthDate ? (()=>{ const d=new Date(person.birthDate+"T00:00:00"); return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; })() : 'N/A'}
-          </p>
+          <p className="text-xs text-gray-500 mt-1">Born: {person.birthDate ? formatDateDMY(person.birthDate) : 'N/A'}</p>
         </div>
       </div>
     </div>
