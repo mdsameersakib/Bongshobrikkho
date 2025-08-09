@@ -13,6 +13,8 @@ export default function PersonNode({ person, relationship, style }) {
   return (
     <div
       id={person.id} // Add ID for the centering function to find the element
+      data-x={style.x}
+      data-y={style.y}
       className="absolute bg-white rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300"
       style={{
         width: 220, // New width
