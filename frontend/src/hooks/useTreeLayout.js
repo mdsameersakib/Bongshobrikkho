@@ -1,6 +1,6 @@
 // NOTE: Node dimensions are updated to match the new PersonNode design.
 const NODE_WIDTH = 220;
-const NODE_HEIGHT = 100;
+const NODE_HEIGHT = 90; // align with PersonNode height for precise geometry
 const H_SPACING = 48; // horizontal gap between units
 const V_SPACING = 150; // vertical gap between generations
 const COUPLE_SPACING = 80; // gap between spouses in a couple unit
@@ -111,55 +111,66 @@ export const calculateTreeLayout = (allPersons, userPerson, couples = []) => {
   // --- Step 6: Build edges ---
   const edges = [];
 
-  // Marriage edges still rendered (visual grouping) but not used for parent-child anchor logic.
+  // Precompute couple children from docs (for real couples); fallback to member children
+  const coupleChildrenMap = new Map(); // key: sorted(husbandId,wifeId)
+  couples.forEach(c => {
+    coupleChildrenMap.set([c.husbandId, c.wifeId].sort().join('|'), new Set(c.childrenIds || []));
+  });
+
+  const nodeByPersonId = new Map(nodes.map(n => [n.id, n]));
+  const unitChildEdgeSeen = new Set();
+
   connected.forEach(unit => {
+    // Marriage line + heart icon
     if (unit.type === 'couple') {
       const spouseNodes = nodes.filter(n => unit.memberIds.includes(n.id)).sort((a,b)=>a.x-b.x);
       if (spouseNodes.length === 2) {
         const [left,right] = spouseNodes;
-        edges.push({ id:`marriage_${unit.id}`, type:'marriage', x1:left.x+NODE_WIDTH, y1:left.y+NODE_HEIGHT/2, x2:right.x, y2:right.y+NODE_HEIGHT/2 });
+        const yMid = left.y + NODE_HEIGHT/2;
+        edges.push({ id:`marriage_${unit.id}`, type:'marriage', x1:left.x+NODE_WIDTH, y1:yMid, x2:right.x, y2:yMid });
       }
     }
-  });
 
-  // Index couples by participant pair for fallback child lookups
-  const coupleChildrenMap = new Map(); // key: sorted(husbandId,wifeId) => childrenIds[]
-  couples.forEach(c => {
-    const key = [c.husbandId, c.wifeId].sort().join('|');
-    coupleChildrenMap.set(key, c.childrenIds || []);
-  });
-
-  const nodeByPersonId = new Map(nodes.map(n => [n.id, n]));
-  const edgeSeen = new Set(); // parentId|childId
-
-  // Individual parent -> child edges
-  allPersons.forEach(person => {
-    const parentNode = nodeByPersonId.get(person.id);
-    if (!parentNode) return; // not in connected component
-
-    // Aggregate children: own children[] plus couple doc children if this person is in a couple doc.
-    const childSet = new Set(person.children || []);
-    if (person.spouse) {
-      const k = [person.id, person.spouse].sort().join('|');
-      const cKids = coupleChildrenMap.get(k) || [];
-      cKids.forEach(id => childSet.add(id));
+    // Determine children set for this unit
+    const children = new Set();
+    if (unit.type === 'couple') {
+      const key = [...unit.memberIds].sort().join('|');
+      const docKids = coupleChildrenMap.get(key);
+      if (docKids && docKids.size) {
+        docKids.forEach(id => children.add(id));
+      } else {
+        unit.members.forEach(m => (m.children || []).forEach(cId => children.add(cId)));
+      }
+    } else { // single
+      unit.members.forEach(m => (m.children || []).forEach(cId => children.add(cId)));
     }
-    if (!childSet.size) return;
+    if (!children.size) return;
 
-    const pBottomX = parentNode.x + NODE_WIDTH/2;
-    const pBottomY = parentNode.y + NODE_HEIGHT;
+    const pos = positions.get(unit.id);
+    if (!pos) return;
 
-    childSet.forEach(childId => {
+    let startX, startY;
+    if (unit.type === 'couple') {
+      // Heart (marriage midpoint) coordinates
+      startX = pos.x + NODE_WIDTH + COUPLE_SPACING/2;
+      startY = pos.y + NODE_HEIGHT/2; // heart vertical center
+    } else {
+      // Single parent bottom center
+      startX = pos.x + NODE_WIDTH/2;
+      startY = pos.y + NODE_HEIGHT;
+    }
+
+    children.forEach(childId => {
       const childNode = nodeByPersonId.get(childId);
       if (!childNode) return;
-      const key = person.id + '|' + childId;
-      if (edgeSeen.has(key)) return; // avoid duplicates if both parents list child
-      edgeSeen.add(key);
+      const key = unit.id + '|' + childId;
+      if (unitChildEdgeSeen.has(key)) return;
+      unitChildEdgeSeen.add(key);
       const cTopX = childNode.x + NODE_WIDTH/2;
-      const cTopY = childNode.y; // top edge of child node
-      const midY = (pBottomY + cTopY) / 2; // simple two-bend orthogonal
-      const path = `M ${pBottomX} ${pBottomY} V ${midY} H ${cTopX} V ${cTopY}`;
-      edges.push({ id:`pc_${person.id}_${childId}`, type:'parent-child', path });
+      const cTopY = childNode.y;
+      const midY = (startY + cTopY) / 2;
+      const path = `M ${startX} ${startY} V ${midY} H ${cTopX} V ${cTopY}`;
+      edges.push({ id:`pc_${unit.id}_${childId}`, type:'parent-child', path });
     });
   });
 
