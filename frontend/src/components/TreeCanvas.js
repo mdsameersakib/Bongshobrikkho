@@ -1,45 +1,59 @@
 import React from 'react';
 import PersonNode from './PersonNode';
-import useTreeControls from '../hooks/useTreeControls'; // Using our existing controls hook
+import useTreeControls from '../hooks/useTreeControls';
+
+// Heart icon component for the marriage node
+const MarriageIcon = ({ x, y }) => (
+  <svg x={x - 8} y={y - 8} width="16" height="16" viewBox="0 0 24 24" fill="#475569" className="pointer-events-none">
+    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+  </svg>
+);
+
 
 export default function TreeCanvas({ layout }) {
   const { nodes, edges, width, height } = layout;
   const containerRef = React.useRef(null);
-  const viewportRef = React.useRef(null);
+  
+  // Find the user's node ID to pass to the controls hook
+  const userNodeId = nodes.find(n => n.relationship === 'You')?.id;
 
-  // Use the existing hook for pan and zoom controls
-  const { zoom, centerOnNode, transform, setTransform } = useTreeControls(
+  const { zoom, centerOnNode, transform } = useTreeControls(
     containerRef,
-    viewportRef,
-    nodes.find(n => n.relationship === 'You')?.id
+    userNodeId
   );
 
   return (
     <div
       ref={containerRef}
-      className="tree-viewport-container" // Using styles from index.css
+      className="tree-viewport-container"
+      style={{ backgroundSize: `${20 * transform.scale}px ${20 * transform.scale}px` }}
     >
       <div
-        ref={viewportRef}
         className="tree-canvas"
-        style={{ width, height }}
+        style={{ 
+            width, 
+            height,
+            transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+        }}
       >
         <svg
-          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+          className="absolute top-0 left-0 w-full h-full"
+          style={{ overflow: 'visible' }}
         >
           {edges.map((edge) => {
             if (edge.type === 'marriage') {
               return (
-                <line
-                  key={edge.id}
-                  x1={edge.x1}
-                  y1={edge.y1}
-                  x2={edge.x2}
-                  y2={edge.y2}
-                  className="edge-path marriage"
-                />
+                <g key={edge.id}>
+                    <line
+                      x1={edge.x1} y1={edge.y1}
+                      x2={edge.x2} y2={edge.y2}
+                      className="edge-path marriage"
+                    />
+                    <MarriageIcon x={(edge.x1 + edge.x2) / 2} y={(edge.y1 + edge.y2) / 2} />
+                </g>
               );
             }
+            // For parent-child edges
             return (
               <path key={edge.id} d={edge.path} className="edge-path" />
             );
