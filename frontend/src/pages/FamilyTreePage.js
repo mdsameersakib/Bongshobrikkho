@@ -30,14 +30,14 @@ export default function FamilyTreePage() {
   if (loading) {
     return (
       <div className="w-full h-[70vh] flex items-center justify-center">
-        <div className="text-gray-500">Loading Family Data...</div>
+        <div className="text-black/70 dark:text-white/70">Loading Family Data...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="w-full h-[70vh] flex items-center justify-center border rounded-lg bg-red-50 text-red-700 p-4">
+  <div className="w-full h-[70vh] flex items-center justify-center border rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-4">
         <p>{error}</p>
       </div>
     );
@@ -45,7 +45,7 @@ export default function FamilyTreePage() {
   
   if (!userPerson) {
       return (
-      <div className="w-full h-[70vh] flex items-center justify-center border rounded-lg bg-yellow-50 text-yellow-800 p-4">
+  <div className="w-full h-[70vh] flex items-center justify-center border rounded-lg bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 p-4">
         <div>
           <p className="font-bold text-lg">Your Profile Not Found</p>
           <p>We couldn't find your profile in the database. Please try logging out and back in.</p>
@@ -56,8 +56,8 @@ export default function FamilyTreePage() {
 
   if (layout.nodes.length === 0) {
     return (
-      <div className="w-full h-[70vh] flex items-center justify-center border rounded-lg bg-gray-50">
-        <div className="text-gray-500">
+      <div className="w-full h-[70vh] flex items-center justify-center border rounded-lg bg-gray-50 dark:bg-slate-900/40">
+        <div className="text-black/70 dark:text-white/70">
           No family members found. Add some from the Family List page.
         </div>
       </div>
@@ -68,8 +68,8 @@ export default function FamilyTreePage() {
   return (
     <div className="w-full h-full flex flex-col">
       <header className="mb-4 flex-shrink-0">
-        <h2 className="text-2xl font-bold text-gray-800">Family Tree</h2>
-        <p className="text-gray-500 text-sm">
+        <h2 className="text-2xl font-bold text-black dark:text-white">Family Tree</h2>
+        <p className="text-black/70 dark:text-white/70 text-sm">
           A perfectly balanced tree, centered on you.
         </p>
       </header>

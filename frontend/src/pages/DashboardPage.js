@@ -13,19 +13,25 @@ import useCategorizedEvents from '../hooks/useCategorizedEvents';
 import useCouples from '../hooks/useCouples';
 
 // A simple component for the stat cards
-const StatCard = ({ title, value, icon, color }) => (
-  <div className="bg-white p-5 rounded-xl shadow-md flex items-center justify-between">
-    <div>
-      <p className="text-sm font-medium text-gray-500">{title}</p>
-      <p className="text-3xl font-bold text-gray-800">{value}</p>
+const StatCard = ({ title, value, icon, color }) => {
+  const colorMap = {
+    teal: 'bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-300',
+    blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300',
+    orange: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-300',
+    purple: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300'
+  };
+  return (
+    <div className="bg-white dark:bg-slate-950 p-5 rounded-xl shadow-md flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
+        <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">{value}</p>
+      </div>
+      <div className={`rounded-full h-12 w-12 flex items-center justify-center ${colorMap[color] || ''}`}>
+        <i className={`fas ${icon} fa-lg`}></i>
+      </div>
     </div>
-    <div
-      className={`bg-${color}-100 text-${color}-600 rounded-full h-12 w-12 flex items-center justify-center`}
-    >
-      <i className={`fas ${icon} fa-lg`}></i>
-    </div>
-  </div>
-);
+  );
+};
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -67,9 +73,9 @@ export default function DashboardPage() {
 
   return (
     <>
-      <header className="mb-8">
-  <h2 className="text-3xl font-bold text-gray-800">Welcome back, {friendlyName}!</h2>
-        <p className="text-gray-500 mt-1">
+  <header className="mb-8">
+  <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Welcome back, {friendlyName}!</h2>
+    <p className="text-slate-500 dark:text-slate-400 mt-1">
           Here's what's happening in your family circle.
         </p>
       </header>
@@ -111,14 +117,14 @@ export default function DashboardPage() {
       {/* Main Grid: Family List Preview & Requests */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Family List Preview */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-950 p-6 rounded-xl shadow-md">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-gray-800">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
               Family Members Preview
             </h3>
             <Link
               to="/family-list"
-              className="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors text-sm"
+              className="btn btn-primary font-semibold py-2 px-4 rounded-lg shadow text-sm"
             >
               <i className="fas fa-users mr-2"></i>View All
             </Link>
@@ -127,7 +133,7 @@ export default function DashboardPage() {
             {allPersons.slice(0, 5).map((person) => (
               <div
                 key={person.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition"
               >
                 <div className="flex items-center">
                   <img
@@ -138,21 +144,21 @@ export default function DashboardPage() {
                     className="h-10 w-10 rounded-full object-cover"
                   />
                   <div className="ml-4">
-                    <p className="font-semibold text-gray-800">
+                    <p className="font-semibold text-slate-800 dark:text-slate-100">
                       {person.firstName} {person.lastName}
                     </p>
-                    <p className="text-sm text-gray-500">Born: {person.birthDate ? formatDateDMY(person.birthDate) : 'N/A'}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Born: {person.birthDate ? formatDateDMY(person.birthDate) : 'N/A'}</p>
                   </div>
                 </div>
-                <div className="text-gray-400">
+                <div className="text-slate-400">
                   <i className="fas fa-chevron-right"></i>
                 </div>
               </div>
             ))}
             {allPersons.length === 0 && (
-              <p className="text-gray-500 text-center">
+              <p className="text-slate-500 dark:text-slate-400 text-center">
                 No family members added yet. Go to{' '}
-                <Link to="/family-list" className="text-teal-600 hover:underline">
+                <Link to="/family-list" className="text-accent hover:underline">
                   Family List
                 </Link>{' '}
                 to add some!
@@ -161,7 +167,7 @@ export default function DashboardPage() {
             {allPersons.length > 5 && (
               <Link
                 to="/family-list"
-                className="w-full text-center text-teal-600 font-semibold hover:underline block pt-2"
+                className="w-full text-center text-accent font-semibold hover:underline block pt-2"
               >
                 View All Members
               </Link>
@@ -173,8 +179,8 @@ export default function DashboardPage() {
         <div className="space-y-8 lg:col-span-1">
           {/* Upcoming Birthdays Card */}
           {nearestBirthday && (
-            <div className="bg-white p-6 rounded-xl shadow-md">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">
+            <div className="bg-white dark:bg-slate-950 p-6 rounded-xl shadow-md">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">
                 Next Upcoming Event
               </h3>
               <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-4 rounded-lg flex items-center">
@@ -192,7 +198,7 @@ export default function DashboardPage() {
               </div>
               <Link
                 to="/events"
-                className="w-full text-center text-blue-600 font-semibold hover:underline block pt-2"
+                className="w-full text-center text-blue-600 dark:text-blue-400 font-semibold hover:underline block pt-2"
               >
                 View All Events
               </Link>
@@ -201,8 +207,8 @@ export default function DashboardPage() {
 
           {/* Connection Request Card */}
           {pendingRequestsCount > 0 && (
-            <div className="bg-white p-6 rounded-xl shadow-md">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">
+            <div className="bg-white dark:bg-slate-950 p-6 rounded-xl shadow-md">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">
                 Connection Request
               </h3>
               {pendingRequests.slice(0, 1).map((req) => (
@@ -210,7 +216,7 @@ export default function DashboardPage() {
                   key={req.id}
                   className="border border-gray-200 p-4 rounded-lg mb-3 last:mb-0"
                 >
-                  <p className="text-gray-700 mb-3">
+                  <p className="text-slate-700 dark:text-slate-300 mb-3">
                     Request from:{' '}
                     <span className="font-semibold">{req.requesterName || req.requesterEmail}</span>
                   </p>
@@ -233,7 +239,7 @@ export default function DashboardPage() {
               {pendingRequestsCount > 1 && (
                 <Link
                   to="/family-list"
-                  className="w-full text-center text-orange-600 font-semibold hover:underline block pt-2"
+                  className="w-full text-center text-orange-600 dark:text-orange-400 font-semibold hover:underline block pt-2"
                 >
                   View All Requests
                 </Link>

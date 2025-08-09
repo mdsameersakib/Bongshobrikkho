@@ -15,9 +15,9 @@ import {
 
 // --- NEW: Card component for mobile view ---
 const PersonCard = ({ person, logic }) => (
-  <div className="bg-white shadow-md rounded-lg mb-4 overflow-hidden">
+  <div className="accent-surface dark:accent-surface shadow-md rounded-lg mb-4 overflow-hidden border border-slate-200/70 dark:border-slate-700/60">
     {/* Card Header */}
-    <div className="flex items-center p-4 border-b bg-gray-50">
+  <div className="flex items-center p-4 border-b accent-surface-soft dark:accent-surface-soft border-slate-200/70 dark:border-slate-700/60">
       <img
         className="h-12 w-12 rounded-full"
         src={`https://placehold.co/48x48/2c7a7b/ffffff?text=${
@@ -26,23 +26,23 @@ const PersonCard = ({ person, logic }) => (
         alt=""
       />
       <div className="ml-4">
-        <div className="text-lg font-bold text-gray-900">
+  <div className="text-lg font-bold text-black dark:text-white">
           {person.firstName} {person.lastName}
         </div>
-        <div className="text-sm text-gray-500">
+  <div className="text-sm text-black/70 dark:text-white/70">
           {logic.getRelationshipToUser(person)}
         </div>
       </div>
     </div>
 
     {/* Card Body */}
-    <div className="p-4 space-y-3">
+  <div className="p-4 space-y-3">
       <div className="flex justify-between text-sm">
-        <strong className="text-gray-600">Date of Birth:</strong>
+        <strong className="text-black/70 dark:text-white/70">Date of Birth:</strong>
         <span>{person.birthDate || 'N/A'}</span>
       </div>
       <div className="flex justify-between text-sm items-center">
-        <strong className="text-gray-600">Status:</strong>
+        <strong className="text-black/70 dark:text-white/70">Status:</strong>
         {person.claimedByUid ? (
           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
             Claimed
@@ -56,7 +56,7 @@ const PersonCard = ({ person, logic }) => (
     </div>
 
     {/* Card Footer Actions */}
-    <div className="grid grid-cols-5 gap-1 p-2 bg-gray-50 border-t">
+  <div className="grid grid-cols-5 gap-1 p-2 accent-surface-soft dark:accent-surface-soft border-t border-slate-200/70 dark:border-slate-700/60">
       <button
         onClick={() => logic.openAddModal(person, 'child')}
         className="text-green-600 hover:bg-green-100 rounded-md p-2 flex flex-col items-center"
@@ -142,10 +142,10 @@ export default function FamilyListPage() {
 
       <header className="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-800">
+          <h2 className="text-3xl font-bold text-black dark:text-white">
             Family List & Connections
           </h2>
-          <p className="text-gray-500 mt-1">
+          <p className="text-black/70 dark:text-white/70 mt-1">
             Manage your family and find new relatives.
           </p>
         </div>
@@ -156,18 +156,18 @@ export default function FamilyListPage() {
               placeholder="Search by email..."
               value={logic.searchQuery}
               onChange={(e) => logic.setSearchQuery(e.target.value)}
-              className="w-full md:w-64 border-gray-300 rounded-lg pl-10 pr-4 py-2"
+              className="w-full md:w-64 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg pl-10 pr-4 py-2 text-black dark:text-white placeholder-black/50 dark:placeholder-white/40"
             />
             <button
               type="submit"
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40"
             >
               <i className="fas fa-search"></i>
             </button>
           </form>
           <button
             onClick={() => logic.openAddModal(logic.userPerson, 'child')}
-            className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg shadow-md"
+            className="btn btn-primary font-semibold py-2 px-4 rounded-lg shadow"
           >
             <i className="fas fa-plus mr-2"></i>Add Member
           </button>
@@ -181,10 +181,10 @@ export default function FamilyListPage() {
       )}
 
       {(logic.searchResults.length > 0 || logic.searchMessage) && (
-        <div className="mb-6 bg-white shadow-md rounded-lg p-4">
+  <div className="mb-6 accent-surface dark:accent-surface shadow-md rounded-lg p-4 border border-slate-200/70 dark:border-slate-700/60">
           <h3 className="font-bold text-lg mb-2">Search Results</h3>
           {logic.searchMessage && (
-            <p className="text-gray-500 text-sm">{logic.searchMessage}</p>
+            <p className="text-black/70 dark:text-white/70 text-sm">{logic.searchMessage}</p>
           )}
           <div className="space-y-2">
             {logic.searchResults.map((foundUser) => {
@@ -192,16 +192,16 @@ export default function FamilyListPage() {
               return (
                 <div
                   key={foundUser.uid}
-                  className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                  className="flex justify-between items-center p-2 accent-surface-soft rounded border border-slate-200/50 dark:border-slate-700/40"
                 >
-                  <p className="text-sm font-medium">{foundUser.displayName}</p>
+                    <p className="text-sm font-medium text-black dark:text-white">{foundUser.displayName}</p>
                   <button
                     onClick={() => logic.handleSendRequest(foundUser)}
                     disabled={status !== 'None'}
                     className={`px-3 py-1 text-xs font-semibold rounded-full ${
                       status === 'None'
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'bg-gray-200 text-gray-600 cursor-not-allowed'
+                        ? 'bg-accent text-accent-foreground hover:bg-accent/90'
+                        : 'bg-slate-300 dark:bg-slate-700 text-black dark:text-white cursor-not-allowed'
                     }`}
                   >
                     {status === 'Pending'
@@ -227,46 +227,46 @@ export default function FamilyListPage() {
       </div>
 
       {/* Desktop Table Layout (Hidden on small screens, visible on medium and up) */}
-      <div className="hidden md:block bg-white shadow-md rounded-lg overflow-hidden">
+  <div className="hidden md:block accent-surface dark:accent-surface shadow-md rounded-lg overflow-hidden border border-slate-200/70 dark:border-slate-700/60">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+    <thead className="accent-surface-soft">
               <tr>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+      className="px-6 py-3 text-left text-xs font-semibold text-black dark:text-white uppercase tracking-wider"
                 >
                   Name
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+      className="px-6 py-3 text-left text-xs font-semibold text-black dark:text-white uppercase tracking-wider"
                 >
                   Relationship
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+      className="px-6 py-3 text-left text-xs font-semibold text-black dark:text-white uppercase tracking-wider"
                 >
                   Date of Birth
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+      className="px-6 py-3 text-left text-xs font-semibold text-black dark:text-white uppercase tracking-wider"
                 >
                   Status / Invite Code
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+      className="px-6 py-4 text-right text-xs font-semibold text-black dark:text-white uppercase tracking-wider"
                 >
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="accent-surface divide-y divide-gray-200 dark:divide-slate-800">
               {logic.allPersons.map((person) => (
-                <tr key={person.id} className="hover:bg-gray-50">
+                <tr key={person.id} className="even:accent-surface-soft hover:accent-surface-soft transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
@@ -279,16 +279,16 @@ export default function FamilyListPage() {
                         />
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-black dark:text-white">
                           {person.firstName} {person.lastName}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-black/70 dark:text-white/70">
                     {logic.getRelationshipToUser(person)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-black/70 dark:text-white/70">
                     {person.birthDate || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -326,7 +326,7 @@ export default function FamilyListPage() {
                     </button>
                     <button
                       onClick={() => logic.openEditModal(person)}
-                      className="text-teal-600 hover:text-teal-900 mr-4"
+                      className="text-accent hover:text-accent/80 mr-4"
                       title="Edit"
                     >
                       <FontAwesomeIcon icon={faPen} />

@@ -3,6 +3,51 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './styles/tokens.css';
+
+@layer components {
+	.btn { @apply inline-flex items-center justify-center font-medium rounded-md px-4 py-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent/60 disabled:opacity-50 disabled:cursor-not-allowed; }
+	.btn-primary { @apply bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm; }
+	.btn-ghost { @apply text-slate-600 dark:text-slate-300 hover:bg-slate-100/70 dark:hover:bg-slate-800/70; }
+	.card { @apply rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200/70 dark:border-slate-700/60; }
+	.input { @apply w-full px-3 py-2 rounded-md bg-white/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-600 focus:ring-2 focus:ring-accent/40 focus:outline-none; }
+	.badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-accent/10 text-accent; }
+}
+
+/* Global text color simplification: only black (light) or white (dark) */
+body { @apply text-black dark:text-white; }
+
+/* Accent-driven dark mode background styling */
+.app-shell { @apply transition-colors; }
+.dark .app-shell { 
+	background: radial-gradient(rgb(var(--accent) / 0.18) 1px, transparent 1px), rgb(var(--accent) / 0.10);
+	background-size: 26px 26px;
+}
+.dark .app-shell main { 
+	background: radial-gradient(rgb(var(--accent) / 0.25) 1px, transparent 1px), rgb(var(--accent) / 0.14);
+	background-size: 26px 26px;
+}
+
+/* Light mode accent pattern & tint (parity with dark mode idea) */
+.app-shell { 
+	/* Layer order: pattern dots, soft directional tint, base */
+	background:
+		radial-gradient(rgb(var(--accent) / 0.22) 1px, transparent 1px),
+		linear-gradient(135deg, rgb(var(--accent) / 0.09), rgb(var(--accent) / 0.03)),
+		#f8fafc;
+	background-size: 26px 26px, 100% 100%, 100% 100%;
+}
+.app-shell main { 
+	background:
+		radial-gradient(rgb(var(--accent) / 0.25) 1px, transparent 1px),
+		linear-gradient(135deg, rgb(var(--accent) / 0.10), rgb(var(--accent) / 0.04)),
+		#ffffff;
+	background-size: 26px 26px, 100% 100%, 100% 100%;
+}
+
+/* Optional: subtle card lift in dark using accent tint */
+.dark .card { box-shadow: 0 4px 16px -2px rgb(var(--accent) / 0.25); }
+
 
 /* Family tree canvas & edges */
 .tree-viewport-container {
@@ -18,6 +63,13 @@
     transition: background-size 0.2s ease-in-out;
 }
 
+.dark .tree-viewport-container {
+	border-color: rgb(var(--accent) / 0.4);
+	background-image: radial-gradient(rgb(var(--accent) / 0.4) 1px, transparent 1px);
+	background-size: 22px 22px;
+	background-color: rgb(var(--accent) / 0.12);
+}
+
 .tree-canvas {
 	position: absolute;
 	/* Inset removed, width/height and transform are now inline */
@@ -25,16 +77,41 @@
     transition: transform 0.3s ease-out;
 }
 
-.edge-path {
-	stroke: #94a3b8; /* slate-400 */
-	stroke-width: 2; /* SVG property, no units */
-	fill: none;
-	vector-effect: non-scaling-stroke;
-	stroke-linecap: round;
-    stroke-linejoin: round; /* Add for smoother corners */
+.edge-path { stroke: #64748b; stroke-width: 2; fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
+.dark .edge-path { stroke: rgb(var(--accent) / 0.55); }
+
+.edge-path.marriage { stroke: #475569; stroke-width: 2.5; }
+.dark .edge-path.marriage { stroke: rgb(var(--accent) / 0.8); }
+
+/* Sidebar accent tint */
+.sidebar-accent {
+	background:
+		linear-gradient(180deg, rgb(var(--accent) / 0.12), rgb(var(--accent) / 0.04));
+	position: relative;
+}
+.dark .sidebar-accent {
+	background:
+		linear-gradient(180deg, rgb(var(--accent) / 0.22), rgb(var(--accent) / 0.08));
+}
+.sidebar-accent:before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		linear-gradient(90deg, rgb(var(--accent) / 0.25), transparent 40%);
+	mix-blend-mode: plus-lighter;
+	opacity: .55;
+}
+.dark .sidebar-accent:before {
+	background:
+		linear-gradient(90deg, rgb(var(--accent) / 0.35), transparent 50%);
+	opacity: .4;
+	mix-blend-mode: overlay;
 }
 
-.edge-path.marriage {
-	stroke: #475569; /* slate-600 */
-	stroke-width: 2.5;
-}
+/* Accent surface utilities */
+.accent-surface { background: linear-gradient(135deg, rgb(var(--accent) / 0.08), rgb(var(--accent) / 0.03)); }
+.dark .accent-surface { background: linear-gradient(135deg, rgb(var(--accent) / 0.18), rgb(var(--accent) / 0.07)); }
+.accent-surface-soft { background: rgb(var(--accent) / 0.06); }
+.dark .accent-surface-soft { background: rgb(var(--accent) / 0.12); }

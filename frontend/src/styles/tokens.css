@@ -1,0 +1,48 @@
+:root {
+  /* Accent defaults (teal) */
+  --accent: 13 148 136; /* teal-600 rgb components */
+  --accent-foreground: 255 255 255;
+
+  /* Surfaces (light) */
+  --surface-50: #f8fafc;
+  --surface-100: #f1f5f9;
+  --surface-200: #e2e8f0;
+  --surface-800: #1e293b;
+  --surface-900: #0f172a;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+}
+
+.dark {
+  --accent-foreground: 15 23 42; /* slate-900 for better contrast on bright accent */
+}
+
+/* Accent variants (will be swapped by setting data-accent on html) */
+html[data-accent='teal'] { --accent: 13 148 136; }
+html[data-accent='emerald'] { --accent: 16 185 129; }
+html[data-accent='indigo'] { --accent: 79 70 229; }
+html[data-accent='violet'] { --accent: 139 92 246; }
+html[data-accent='rose'] { --accent: 244 63 94; }
+html[data-accent='amber'] { --accent: 217 119 6; }
+html[data-accent='sky'] { --accent: 2 132 199; }
+html[data-accent='cyan'] { --accent: 14 116 144; }
+html[data-accent='lime'] { --accent: 101 163 13; }
+html[data-accent='orange'] { --accent: 234 88 12; }
+html[data-accent='fuchsia'] { --accent: 192 38 211; }
+html[data-accent='slate'] { --accent: 71 85 105; }
+
+/* Primitive utility helpers */
+.btn { @apply inline-flex items-center justify-center font-medium rounded-md px-4 py-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent/60 disabled:opacity-50 disabled:cursor-not-allowed; }
+.btn-primary { @apply bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm; }
+.btn-ghost { @apply text-slate-600 dark:text-slate-300 hover:bg-slate-100/70 dark:hover:bg-slate-800/70; }
+.card { @apply rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200/70 dark:border-slate-700/60; }
+.input { @apply w-full px-3 py-2 rounded-md bg-white/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-600 focus:ring-2 focus:ring-accent/40 focus:outline-none; }
+.badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-accent/10 text-accent; }
+
+/* Scrollbar theming (modern browsers) */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgb(var(--accent) / 0.45); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--accent) / 0.6); }

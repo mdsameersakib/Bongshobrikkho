@@ -15,6 +15,7 @@ import FamilyListPage from './pages/FamilyListPage';
 import FamilyTreePage from './pages/FamilyTreePage';
 import FamilyWallPage from './pages/FamilyWallPage';
 import EventsPage from './pages/EventsPage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
   // Get user and loading state from our new context
@@ -39,6 +40,7 @@ function App() {
           <Route path="family-tree" element={<FamilyTreePage />} />
           <Route path="family-wall" element={<FamilyWallPage />} />
           <Route path="events" element={<EventsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
