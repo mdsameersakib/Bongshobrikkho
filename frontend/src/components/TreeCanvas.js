@@ -9,24 +9,25 @@ const MarriageIcon = ({ x, y }) => (
   </svg>
 );
 
-
 export default function TreeCanvas({ layout }) {
   const { nodes, edges, width, height } = layout;
   const containerRef = React.useRef(null);
   
-  // Find the user's node ID to pass to the controls hook
   const userNodeId = nodes.find(n => n.relationship === 'You')?.id;
 
-  const { zoom, centerOnNode, transform } = useTreeControls(
+  // The hook now returns the transform state AND the event handlers
+  const { zoom, centerOnNode, transform, eventHandlers } = useTreeControls(
     containerRef,
     userNodeId
   );
 
   return (
+    // The event handlers are now attached to this container div
     <div
       ref={containerRef}
       className="tree-viewport-container"
-      style={{ backgroundSize: `${20 * transform.scale}px ${20 * transform.scale}px` }}
+      style={{ backgroundSize: `${20 * transform.scale}px ${20 * transform.scale}px`, cursor: 'grab' }}
+      {...eventHandlers}
     >
       <div
         className="tree-canvas"
@@ -53,7 +54,6 @@ export default function TreeCanvas({ layout }) {
                 </g>
               );
             }
-            // For parent-child edges
             return (
               <path key={edge.id} d={edge.path} className="edge-path" />
             );

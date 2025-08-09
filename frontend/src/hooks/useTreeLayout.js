@@ -68,24 +68,28 @@ export const calculateTreeLayout = (allPersons, userPerson, couples = []) => {
   // Step 5: Expand units into person nodes (No changes)
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   const nodes = [];
+  // Helper to compute average horizontal center of a person's parents (if available)
+  const computeParentAnchor = (person) => {
+    if (!person.parents || !person.parents.length) return undefined;
+    const centers = person.parents.map(pid => {
+      const pu = personToUnit.get(pid);
+      if (!pu) return undefined;
+      const pPos = positions.get(pu.id);
+      if (!pPos) return undefined;
+      const width = pu.type === 'couple' ? (NODE_WIDTH * 2 + COUPLE_SPACING) : NODE_WIDTH;
+      return pPos.x + width / 2;
+    }).filter(v => v != null);
+    if (!centers.length) return undefined;
+    return centers.reduce((a,c)=>a+c,0)/centers.length;
+  };
+
   for (const u of connected) {
     const pos = positions.get(u.id); if (!pos) continue;
     let ordered = u.members;
     if (u.type === 'couple' && u.members.length === 2) {
       const [A, B] = u.members;
-      const parentAnchor = (person) => {
-        if (!person.parents || !person.parents.length) return undefined;
-        const centers = person.parents.map(pid => {
-          const pu = personToUnit.get(pid);
-            if (!pu) return undefined;
-            const pPos = positions.get(pu.id);
-            return pPos ? pPos.x + (pu.type === 'couple' ? (NODE_WIDTH * 2 + COUPLE_SPACING) / 2 : NODE_WIDTH / 2) : undefined;
-        }).filter(v => v != null);
-        if (!centers.length) return undefined;
-        return centers.reduce((a,c)=>a+c,0)/centers.length;
-      };
-      const anchorA = parentAnchor(A);
-      const anchorB = parentAnchor(B);
+      const anchorA = computeParentAnchor(A);
+      const anchorB = computeParentAnchor(B);
       const leftCenter = pos.x + NODE_WIDTH / 2;
       const rightCenter = pos.x + NODE_WIDTH + COUPLE_SPACING + NODE_WIDTH / 2;
       if (anchorA != null || anchorB != null) {
@@ -100,12 +104,16 @@ export const calculateTreeLayout = (allPersons, userPerson, couples = []) => {
     } else if (u.type === 'couple') {
       ordered = [...u.members].sort((a,b)=> { if (a.gender !== b.gender) { if (a.gender === 'Male') return -1; if (b.gender === 'Male') return 1; } return a.id.localeCompare(b.id); });
     }
-    ordered.forEach((p,i)=> {
+    for (let i = 0; i < ordered.length; i++) {
+      const p = ordered[i];
       const x = pos.x + (u.type === 'couple' ? i * (NODE_WIDTH + COUPLE_SPACING) : 0);
       const y = pos.y;
-      nodes.push({ id:p.id, x, y, person:p, relationship:p.relationship });
-      minX = Math.min(minX, x); maxX = Math.max(maxX, x + NODE_WIDTH); minY = Math.min(minY, y); maxY = Math.max(maxY, y + NODE_HEIGHT);
-    });
+      nodes.push({ id: p.id, x, y, person: p, relationship: p.relationship });
+      if (x < minX) minX = x;
+      if (x + NODE_WIDTH > maxX) maxX = x + NODE_WIDTH;
+      if (y < minY) minY = y;
+      if (y + NODE_HEIGHT > maxY) maxY = y + NODE_HEIGHT;
+    }
   }
 
   // --- Step 6: Build edges ---
