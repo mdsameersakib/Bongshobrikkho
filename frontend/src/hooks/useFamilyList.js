@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { getDisplayName } from '../utils/displayName';
 import { db } from '../services/firebase';
 import {
   collection, doc, writeBatch, arrayUnion, arrayRemove, updateDoc, query, where, getDocs, Timestamp, addDoc
@@ -336,9 +337,14 @@ export default function useFamilyList() {
   const handleSendRequest = async (recipient) => {
     try {
       await addDoc(collection(db, "connections"), {
-        requesterUid: user.uid, requesterEmail: user.email,
-        recipientUid: recipient.uid, recipientEmail: recipient.email,
-        status: 'pending', createdAt: Timestamp.now(),
+        requesterUid: user.uid,
+        requesterEmail: user.email,
+        requesterName: getDisplayName(user.uid, user.email, allPersons),
+        recipientUid: recipient.uid,
+        recipientEmail: recipient.email,
+        recipientName: recipient.displayName || recipient.firstName || recipient.email.split('@')[0],
+        status: 'pending',
+        createdAt: Timestamp.now(),
       });
       alert("Request Sent!");
       setSearchResults([]); setSearchQuery(''); setSearchMessage('');

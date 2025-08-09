@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { getDisplayName } from '../utils/displayName';
+import usePersons from '../hooks/usePersons';
 import useFamilyWall from '../hooks/useFamilyWall';
 import CommentSection from '../components/CommentSection';
 
 export default function FamilyWallPage() {
   const { user } = useAuth();
+  const { allPersons } = usePersons();
+  const myName = getDisplayName(user?.uid, user?.email, allPersons);
   // The hook now provides the logic functions
   const {
     posts,
@@ -54,9 +58,7 @@ export default function FamilyWallPage() {
               <textarea
                 className="w-full border-none p-2 text-gray-700 focus:ring-0 placeholder-gray-400"
                 rows="3"
-                placeholder={`What's on your mind, ${
-                  user.email.split('@')[0]
-                }?`}
+                placeholder={`What's on your mind, ${myName}?`}
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
               ></textarea>
@@ -85,14 +87,12 @@ export default function FamilyWallPage() {
               <div key={post.id} className="bg-white p-6 rounded-xl shadow-md">
                 <div className="flex items-center mb-4">
                   <img
-                    src={`https://placehold.co/48x48/16a34a/ffffff?text=${post.authorEmail[0].toUpperCase()}`}
-                    alt={post.authorEmail}
+                    src={`https://placehold.co/48x48/16a34a/ffffff?text=${(post.authorName||post.authorEmail||'U')[0].toUpperCase()}`}
+                    alt={post.authorName || post.authorEmail}
                     className="h-12 w-12 rounded-full object-cover"
                   />
                   <div className="ml-4">
-                    <p className="font-semibold text-gray-900">
-                      {post.authorEmail}
-                    </p>
+                    <p className="font-semibold text-gray-900">{post.authorName || post.authorEmail}</p>
                     <p className="text-xs text-gray-500">
                       {post.createdAt
                         ? new Date(post.createdAt.toDate()).toLocaleString()
