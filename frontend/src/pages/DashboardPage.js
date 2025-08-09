@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { getDisplayName } from '../utils/displayName';
 import { useAuth } from '../context/AuthContext';
 
 // Import all the necessary hooks
@@ -8,6 +9,7 @@ import usePersons from '../hooks/usePersons';
 import useFamilyWall from '../hooks/useFamilyWall';
 import useEvents from '../hooks/useEvents';
 import useCategorizedEvents from '../hooks/useCategorizedEvents';
+import useCouples from '../hooks/useCouples';
 
 // A simple component for the stat cards
 const StatCard = ({ title, value, icon, color }) => (
@@ -36,9 +38,11 @@ export default function DashboardPage() {
   } = useConnections();
 
   const { allPersons } = usePersons();
+  const friendlyName = getDisplayName(user?.uid, user?.email, allPersons);
   const { posts } = useFamilyWall();
   const { customEvents } = useEvents();
-  const { upcoming } = useCategorizedEvents(allPersons, customEvents, user);
+  const { couples } = useCouples();
+  const { upcoming } = useCategorizedEvents(allPersons, customEvents, couples, user);
   const nearestBirthday = upcoming.length > 0 ? upcoming[0] : null;
 
   const familyMembersCount = allPersons.length;
@@ -63,9 +67,7 @@ export default function DashboardPage() {
   return (
     <>
       <header className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-800">
-          Welcome back, {user?.email.split('@')[0]}!
-        </h2>
+  <h2 className="text-3xl font-bold text-gray-800">Welcome back, {friendlyName}!</h2>
         <p className="text-gray-500 mt-1">
           Here's what's happening in your family circle.
         </p>
@@ -139,7 +141,7 @@ export default function DashboardPage() {
                       {person.firstName} {person.lastName}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Born: {person.birthDate || 'N/A'}
+                      Born: {person.birthDate ? (()=>{ const d=new Date(person.birthDate+"T00:00:00"); return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; })() : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -211,7 +213,7 @@ export default function DashboardPage() {
                 >
                   <p className="text-gray-700 mb-3">
                     Request from:{' '}
-                    <span className="font-semibold">{req.requesterEmail}</span>
+                    <span className="font-semibold">{req.requesterName || req.requesterEmail}</span>
                   </p>
                   <div className="flex space-x-3">
                     <button

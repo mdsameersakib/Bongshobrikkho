@@ -14,10 +14,13 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import useConnections from './useConnections';
+import usePersons from './usePersons';
+import { getDisplayName } from '../utils/displayName';
 
 export default function useFamilyWall() {
   const { user } = useAuth();
   const { accepted: connections } = useConnections();
+  const { allPersons } = usePersons();
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,10 +49,14 @@ export default function useFamilyWall() {
     const unsubscribe = onSnapshot(
       postsQuery,
       (snapshot) => {
-        const postsData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const postsData = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            authorName: getDisplayName(data.authorUid, data.authorEmail, allPersons)
+          };
+        });
         setPosts(postsData);
       },
       (err) => {
@@ -59,7 +66,7 @@ export default function useFamilyWall() {
     );
 
     return () => unsubscribe();
-  }, [user, connections]);
+  }, [user, connections, allPersons]);
 
   const createPost = async (content) => {
     if (!content.trim() || !user) return;
@@ -70,6 +77,7 @@ export default function useFamilyWall() {
         content: content,
         authorUid: user.uid,
         authorEmail: user.email,
+        authorName: getDisplayName(user.uid, user.email, allPersons),
         createdAt: Timestamp.now(),
         reactions: {},
       });

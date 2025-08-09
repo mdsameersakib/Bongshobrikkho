@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import usePersons from '../hooks/usePersons';
+import { getDisplayName } from '../utils/displayName';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTachometerAlt, faUsers, faSitemap, faNewspaper, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 
@@ -23,6 +25,8 @@ const SidebarLink = ({ to, icon, children }) => {
 
 export default function Layout({ handleLogout }) {
   const { user } = useAuth();
+  const { allPersons } = usePersons();
+  const displayName = getDisplayName(user?.uid, user?.email, allPersons);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   return (
@@ -42,12 +46,12 @@ export default function Layout({ handleLogout }) {
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center">
             <img 
-              src={`https://placehold.co/40x40/2c7a7b/ffffff?text=${user?.email?.[0].toUpperCase()}`} 
+              src={`https://placehold.co/40x40/2c7a7b/ffffff?text=${displayName?.[0] || 'U'}`} 
               alt="User Avatar" 
               className="rounded-full h-10 w-10"
             />
             <div className="ml-3">
-              <p className="text-sm font-semibold text-gray-800 truncate">{user?.email}</p>
+              <p className="text-sm font-semibold text-gray-800 truncate">{displayName}</p>
               <button onClick={handleLogout} className="text-xs text-red-600 hover:underline">Logout</button>
             </div>
           </div>

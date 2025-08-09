@@ -1,26 +1,57 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext'; // <-- Import useAuth
 
 // Import our custom hooks
 import usePersons from '../hooks/usePersons';
 import useEvents from '../hooks/useEvents';
 import useCategorizedEvents from '../hooks/useCategorizedEvents';
+import useCouples from '../hooks/useCouples';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '../services/firebase';
+import AddEventModal from '../components/AddEventModal';
 
-// Helper to format dates
+// Helper: format as DD/MM/YYYY
 const formatDate = (dateStr) => {
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T00:00:00');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
 };
 
 export default function EventsPage() {
     const { user } = useAuth(); // <-- Get user from context
+    const [showModal, setShowModal] = useState(false);
 
     // --- REFACTORED: Hooks called without arguments ---
     const { allPersons } = usePersons();
     const { customEvents } = useEvents();
+    const { couples } = useCouples();
+    const [editingId, setEditingId] = useState(null);
+    const [editForm, setEditForm] = useState({ title:'', date:'', type:'' });
+    const [savingEdit, setSavingEdit] = useState(false);
 
     // Process all data with our logic hook
-    const { upcoming, later, remembrance } = useCategorizedEvents(allPersons, customEvents, user);
+    const { upcoming, later, remembrance } = useCategorizedEvents(allPersons, customEvents, couples, user);
+
+    const beginEdit = (ev) => {
+        setEditingId(ev.id);
+        setEditForm({ title: ev.title, date: ev.date, type: ev.type });
+    };
+    const cancelEdit = ()=> { setEditingId(null); };
+    const saveEdit = async () => {
+        if (!editingId) return; setSavingEdit(true);
+        try {
+            await updateDoc(doc(db,'events', editingId), { ...editForm });
+            setEditingId(null);
+        } catch(e){ console.error('Update failed', e); }
+        finally { setSavingEdit(false); }
+    };
+    const removeEvent = async (id) => {
+        if (!window.confirm('Delete this event?')) return;
+        try { await deleteDoc(doc(db,'events', id)); } catch(e){ console.error('Delete failed', e); }
+    };
 
     // Render the UI
     return (
@@ -30,20 +61,28 @@ export default function EventsPage() {
                     <h2 className="text-3xl font-bold text-gray-800">Family Events</h2>
                     <p className="text-gray-500 mt-1">Keep track of important dates and milestones.</p>
                 </div>
-                <button className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg">
+                <button onClick={()=>setShowModal(true)} className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg">
                     <i className="fas fa-plus mr-2"></i>Add New Event
                 </button>
             </header>
 
             <div className="space-y-10">
-                {/* Upcoming Events Section */}
+                <div className="text-xs text-gray-500 flex flex-wrap gap-4">
+                    <span><span className="inline-block w-3 h-3 bg-blue-500 mr-1 align-middle rounded-sm"></span>Birthday</span>
+                    <span><span className="inline-block w-3 h-3 bg-amber-500 mr-1 align-middle rounded-sm"></span>Anniversary</span>
+                    <span><span className="inline-block w-3 h-3 bg-pink-500 mr-1 align-middle rounded-sm"></span>Custom Event</span>
+                </div>
+                {/* Upcoming Events Section (includes birthdays, anniversaries, custom) */}
                 <div>
                     <h3 className="text-xl font-semibold text-gray-700 mb-4">Upcoming in the next 30 days</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {upcoming.map((event, index) => (
-                            <div key={index} className={`bg-white p-5 rounded-xl shadow-md border-l-4 ${event.type === 'birthday' ? 'border-blue-500' : 'border-pink-500'}`}>
+                            <div key={index} className={`bg-white p-5 rounded-xl shadow-md border-l-4 ${event.type === 'birthday' ? 'border-blue-500' : event.type === 'anniversary' ? 'border-amber-500' : 'border-pink-500'}`}>
                                 <p className="font-semibold text-gray-800">{event.personName}</p>
                                 <p className="text-sm text-gray-600">{formatDate(event.date)}</p>
+                                {event.type === 'anniversary' && event.years != null && (
+                                    <p className="text-xs text-amber-600 mt-1">{event.years} year{event.years === 1 ? '' : 's'}</p>
+                                )}
                             </div>
                         ))}
                         {upcoming.length === 0 && <p className="text-gray-500">No events in the next 30 days.</p>}
@@ -84,10 +123,58 @@ export default function EventsPage() {
                     </div>
                 </div>
             </div>
-             <div className="mt-6 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg" role="alert">
-                <p className="font-bold">Developer Note:</p>
-                <p>The "Add New Event" button is still a placeholder. We can build the form for it in a future step.</p>
-            </div>
+                        {/* Custom Events List */}
+                        {customEvents && customEvents.length > 0 && (
+                            <div className="mt-10">
+                                <h3 className="text-xl font-semibold text-gray-700 mb-4">Created Family Events</h3>
+                                <div className="space-y-3">
+                                    {customEvents.map(ev => {
+                                        const isOwner = ev.creatorUid === user?.uid;
+                                        const isEditing = editingId === ev.id;
+                                        return (
+                                        <div key={ev.id} className="bg-white p-4 rounded-lg shadow border border-teal-100">
+                                            {isEditing ? (
+                                                <div className="space-y-2">
+                                                    <input className="w-full border px-2 py-1 rounded" value={editForm.title} onChange={e=>setEditForm(f=>({...f,title:e.target.value}))} />
+                                                    <div className="flex gap-2">
+                                                        <input type="date" className="flex-1 border px-2 py-1 rounded" value={editForm.date} onChange={e=>setEditForm(f=>({...f,date:e.target.value}))} />
+                                                        <select className="border px-2 py-1 rounded" value={editForm.type} onChange={e=>setEditForm(f=>({...f,type:e.target.value}))}>
+                                                            <option value="gathering">Gathering</option>
+                                                            <option value="wedding">Wedding</option>
+                                                            <option value="reunion">Reunion</option>
+                                                            <option value="religious">Religious</option>
+                                                            <option value="other">Other</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="flex gap-2 justify-end">
+                                                        <button onClick={cancelEdit} type="button" className="px-3 py-1 text-sm rounded bg-gray-200 hover:bg-gray-300">Cancel</button>
+                                                        <button disabled={savingEdit} onClick={saveEdit} type="button" className="px-3 py-1 text-sm rounded bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50">{savingEdit?'Saving...':'Save'}</button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div>
+                                                    <p className="font-semibold text-gray-800">{ev.title}</p>
+                                                    <p className="text-xs text-gray-500 uppercase tracking-wide">{ev.type}</p>
+                                                    <p className="text-xs text-gray-400 mt-1">Invited: {ev.invitees?.length || 0}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm text-gray-600">{formatDate(ev.date)}</p>
+                                                    {isOwner && (
+                                                        <div className="flex gap-2 justify-end mt-2">
+                                                            <button onClick={()=>beginEdit(ev)} className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200">Edit</button>
+                                                            <button onClick={()=>removeEvent(ev.id)} className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200">Delete</button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>)}
+                                        </div>);
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        <AddEventModal open={showModal} onClose={()=>setShowModal(false)} persons={allPersons || []} />
         </>
     );
 }

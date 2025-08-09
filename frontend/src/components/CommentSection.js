@@ -3,10 +3,13 @@ import { db } from '../services/firebase'; // <-- FIXED: 'auth' import removed
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext'; // <-- We now get the user from here
 import useComments from '../hooks/useComments';
+import usePersons from '../hooks/usePersons';
+import { getDisplayName } from '../utils/displayName';
 
 export default function CommentSection({ postId }) {
   const { user } = useAuth(); // Get user from the context
   const comments = useComments(postId);
+  const { allPersons } = usePersons();
   const [newComment, setNewComment] = useState('');
 
   const handleAddComment = async (e) => {
@@ -18,6 +21,7 @@ export default function CommentSection({ postId }) {
         content: newComment,
         authorUid: user.uid,
         authorEmail: user.email,
+        authorName: getDisplayName(user.uid, user.email, allPersons),
         createdAt: Timestamp.now(),
       });
       setNewComment('');
@@ -29,20 +33,22 @@ export default function CommentSection({ postId }) {
   return (
     <div className="mt-4 pt-4 border-t space-y-4">
       {/* List of existing comments */}
-      {comments.map(comment => (
+      {comments.map(comment => {
+        const name = comment.authorName || getDisplayName(comment.authorUid, comment.authorEmail, allPersons);
+        return (
         <div key={comment.id} className="flex items-start space-x-3">
-          <img src={`https://placehold.co/32x32/2c7a7b/ffffff?text=${comment.authorEmail[0].toUpperCase()}`} alt={comment.authorEmail} className="h-8 w-8 rounded-full" />
+          <img src={`https://placehold.co/32x32/2c7a7b/ffffff?text=${name[0].toUpperCase()}`} alt={name} className="h-8 w-8 rounded-full" />
           <div className="bg-gray-100 p-3 rounded-lg flex-1">
-            <p className="font-semibold text-sm text-gray-800">{comment.authorEmail}</p>
+            <p className="font-semibold text-sm text-gray-800">{name}</p>
             <p className="text-sm text-gray-700 whitespace-pre-wrap">{comment.content}</p>
           </div>
-        </div>
-      ))}
+        </div>);
+      })}
 
       {/* Add new comment form */}
       {user && (
         <form onSubmit={handleAddComment} className="flex items-center space-x-3">
-          <img src={`https://placehold.co/32x32/2c7a7b/ffffff?text=${user.email[0].toUpperCase()}`} alt="User Avatar" className="h-8 w-8 rounded-full" />
+          <img src={`https://placehold.co/32x32/2c7a7b/ffffff?text=${(getDisplayName(user.uid, user.email, allPersons)[0]||'U').toUpperCase()}`} alt="User Avatar" className="h-8 w-8 rounded-full" />
           <input 
             type="text" 
             value={newComment}
