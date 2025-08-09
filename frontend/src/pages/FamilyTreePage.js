@@ -1,12 +1,14 @@
 import React, { useMemo } from 'react';
 import usePersons from '../hooks/usePersons';
 import useFamilyList from '../hooks/useFamilyList';
-import { calculateTreeLayout } from '../hooks/useTreeLayout'; // <-- Import the function
+import useCouples from '../hooks/useCouples';
+import { calculateTreeLayout } from '../hooks/useTreeLayout';
 import TreeCanvas from '../components/TreeCanvas';
 
 export default function FamilyTreePage() {
   // 1. Fetch all necessary data first. The hook provides loading state.
   const { allPersons, userPerson, error, loading } = usePersons();
+  const { couples } = useCouples();
   const { getRelationshipToUser } = useFamilyList();
 
   // 2. Calculate the layout only when the data is available.
@@ -21,8 +23,8 @@ export default function FamilyTreePage() {
         relationship: getRelationshipToUser(p)
     }));
 
-    return calculateTreeLayout(personsWithRelationships, userPerson);
-  }, [allPersons, userPerson, getRelationshipToUser]);
+    return calculateTreeLayout(personsWithRelationships, userPerson, couples);
+  }, [allPersons, userPerson, couples, getRelationshipToUser]);
 
   // 3. Handle loading and error states explicitly.
   if (loading) {
