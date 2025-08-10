@@ -12,6 +12,12 @@
 	.card { @apply rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200/70 dark:border-slate-700/60; }
 	.input { @apply w-full px-3 py-2 rounded-md bg-white/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-600 focus:ring-2 focus:ring-accent/40 focus:outline-none; }
 	.badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-accent/10 text-accent; }
+	/* Glass card used on auth pages */
+	.glass-card { @apply rounded-2xl border shadow-lg backdrop-blur-md; }
+	.glass-card { background: linear-gradient(145deg, rgba(var(--accent),0.14), rgba(var(--accent),0.05)) , rgba(255,255,255,0.72); }
+	.dark .glass-card { background: linear-gradient(145deg, rgba(var(--accent),0.25), rgba(var(--accent),0.10)) , rgba(15,23,42,0.70); }
+	.glass-card { border-color: rgba(var(--accent),0.35); }
+	.dark .glass-card { border-color: rgba(var(--accent),0.45); }
 }
 
 /* Global text color simplification: only black (light) or white (dark) */
@@ -115,3 +121,68 @@ body { @apply text-black dark:text-white; }
 .dark .accent-surface { background: linear-gradient(135deg, rgb(var(--accent) / 0.18), rgb(var(--accent) / 0.07)); }
 .accent-surface-soft { background: rgb(var(--accent) / 0.06); }
 .dark .accent-surface-soft { background: rgb(var(--accent) / 0.12); }
+
+/* Auth page accent background (separate from app-shell to avoid double patterns) */
+.auth-page { @apply relative overflow-hidden min-h-screen flex items-center justify-center px-6 py-10; }
+.auth-page:before { /* pattern layer */
+	content: ""; position:absolute; inset:0; pointer-events:none;
+	background:
+		radial-gradient(circle at 25% 30%, rgba(var(--accent),0.35), transparent 70%),
+		radial-gradient(circle at 80% 65%, rgba(var(--accent),0.22), transparent 60%),
+		radial-gradient(rgba(var(--accent),0.18) 1px, transparent 1px);
+	background-size: 100% 100%, 100% 100%, 26px 26px;
+	mix-blend-mode: normal;
+}
+.dark .auth-page:before {
+	background:
+		radial-gradient(circle at 25% 30%, rgba(var(--accent),0.45), transparent 70%),
+		radial-gradient(circle at 80% 65%, rgba(var(--accent),0.30), transparent 60%),
+		radial-gradient(rgba(var(--accent),0.28) 1px, transparent 1px);
+	background-size: 100% 100%, 100% 100%, 26px 26px;
+}
+/* Base background (behind pattern) */
+.auth-page { background:
+	linear-gradient(135deg, rgb(var(--accent) / 0.06), rgb(var(--accent) / 0.015)),
+	#f1f5f9;
+}
+.dark .auth-page { background:
+	linear-gradient(135deg, rgb(var(--accent) / 0.22), rgb(var(--accent) / 0.10)),
+	#0f172a; /* slate-900 */
+}
+.dark .auth-page { color: #fff; }
+
+/* Hybrid BRAND AUTH override (locks large background & hero to brand palette while keeping accent for controls) */
+.brand-auth.auth-page { 
+		--brand-green-dark: 6 78 59; /* emerald-800 approx */
+		--brand-green: 16 185 129; /* emerald-500 */
+		--brand-brown: 120 53 15; /* amber-900 blend */
+		--brand-amber: 180 83 9; /* amber-700 */
+		background:
+			radial-gradient(circle at 68% 42%, rgba(var(--brand-green),0.22), transparent 70%),
+			linear-gradient(135deg, rgb(var(--brand-green-dark)) 0%, rgb(var(--brand-green) / 0.85) 46%, rgb(var(--brand-amber) / 0.90) 100%);
+}
+.dark .brand-auth.auth-page { 
+		background:
+			radial-gradient(circle at 68% 42%, rgba(var(--brand-green),0.28), transparent 70%),
+			linear-gradient(135deg, #022c22 0%, rgba(var(--brand-green-dark),0.92) 50%, rgba(var(--brand-amber),0.65) 100%);
+}
+.brand-auth.auth-page:before { display:none; }
+
+/* Hero title overrides: solid brand color instead of accent gradient */
+.brand-auth .auth-hero-title { background:none; color:#064e3b; -webkit-background-clip:initial; background-clip:initial; }
+.dark .brand-auth .auth-hero-title { color:#d1fae5; }
+
+/* Logo hero styles */
+.logo-hero { position:relative; width:180px; max-width:60%; margin:0 auto 1.25rem; }
+.logo-hero img { width:100%; height:auto; display:block; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.18)); }
+.dark .logo-hero img { filter:drop-shadow(0 6px 16px rgba(0,0,0,0.55)); }
+.logo-hero:after { content:""; position:absolute; inset:0; border-radius:50%; z-index:-1; background:radial-gradient(circle at 50% 50%, rgba(16,185,129,0.42), rgba(180,83,9,0.18) 55%, transparent 72%); filter:blur(26px); }
+
+/* Glass card brand left edge accent */
+.brand-auth .glass-card { position:relative; }
+.brand-auth .glass-card:before { content:""; position:absolute; inset:0 auto 0 0; width:4px; border-radius:4px 0 0 4px; background:linear-gradient(180deg, #059669, #047857 55%, #b45309); opacity:0.9; }
+.auth-hero-title { @apply text-4xl md:text-5xl font-extrabold tracking-tight; }
+.auth-hero-title { background: linear-gradient(90deg, rgba(var(--accent),0.9), rgba(var(--accent),0.55)); -webkit-background-clip:text; color:transparent; }
+.dark .auth-hero-title { background: linear-gradient(90deg, rgba(var(--accent),1), rgba(var(--accent),0.65)); -webkit-background-clip:text; }
+.auth-benefits li { @apply flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300; }
+.auth-benefits li:before { content:"✔"; @apply text-accent font-bold mt-0.5; }

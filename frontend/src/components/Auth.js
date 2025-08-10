@@ -28,12 +28,12 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
   const showDetailFields = isRegisterMode && !invitationCode;
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white dark:bg-slate-950 p-8 rounded-xl shadow-card border border-slate-200 dark:border-slate-800">
-      <h2 className="text-3xl font-bold text-accent text-center mb-6">
-        {isRegisterMode ? 'Register' : 'Login'}
+    <div className="w-full mx-auto">
+      <h2 className="text-xl font-semibold tracking-tight text-center mb-6 text-slate-800">
+        {isRegisterMode ? 'Create your account' : 'Sign in'}
       </h2>
 
-      <form className="space-y-5">
+      <form className="space-y-5" onSubmit={isRegisterMode ? onRegister : onLogin}>
         <div>
           <label htmlFor="email" className="sr-only">Email</label>
           <input
@@ -42,7 +42,7 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
-            className="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-accent/60 focus:border-transparent transition text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
+            className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40"
             aria-label="Email address"
             required
           />
@@ -55,7 +55,7 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
-            className="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-accent/60 focus:border-transparent transition text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
+            className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40"
             aria-label="Password"
             required
           />
@@ -70,7 +70,7 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
               value={invitationCode}
               onChange={(e) => setInvitationCode(e.target.value)}
               placeholder="Invitation Code (Optional)"
-              className="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-accent/60 focus:border-transparent transition text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
+              className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40"
               aria-label="Invitation Code"
             />
           </div>
@@ -78,69 +78,63 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
         
         {/* --- NEW: Conditionally rendered detail fields --- */}
         {showDetailFields && (
-            <div className="space-y-4 pt-4 border-t">
-         <input
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="First Name"
-          className="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg text-slate-800 dark:text-slate-100"
-                    required
-                 />
-                 <input
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Last Name"
-          className="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg text-slate-800 dark:text-slate-100"
-                 />
-                 <div>
-                    <label htmlFor="birthDate" className="text-sm text-gray-500 px-1">Birthdate</label>
-                    <input
-                        id="birthDate"
-                        type="date"
-                        value={birthDate}
-                        onChange={(e) => setBirthDate(e.target.value)}
-            className="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg text-slate-800 dark:text-slate-100"
-                    />
-                 </div>
+            <div className="space-y-4 pt-4 border-t border-slate-200">
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First Name"
+                className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/40"
+                required
+              />
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last Name"
+                className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/40"
+              />
+              <div>
+                <label htmlFor="birthDate" className="text-xs font-medium text-slate-500 px-1">Birthdate</label>
+                <input
+                  id="birthDate"
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/40 mt-1"
+                />
+              </div>
             </div>
         )}
 
 
         {/* Action Buttons */}
-        <div className="button-group space-y-3">
-          {isRegisterMode ? (
-            <button onClick={onRegister} disabled={loading} className="w-full btn btn-primary py-3 font-bold disabled:opacity-50">
-              {loading ? 'Registering...' : 'Register'}
-            </button>
-          ) : (
-            <button onClick={onLogin} disabled={loading} className="w-full btn bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-3 shadow-sm disabled:opacity-50">
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
-          )}
+        <div className="pt-2">
+          <button type="submit" disabled={loading} className="w-full h-11 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            {loading ? (isRegisterMode ? 'Registering...' : 'Logging in...') : (isRegisterMode ? 'Create Account' : 'Sign In')}
+          </button>
         </div>
       </form>
 
       <div className="mt-6 text-center">
         {isRegisterMode ? (
-          <p className="text-slate-600 dark:text-slate-300">
+          <p className="text-slate-600 text-xs">
             Already have an account?{' '}
-            <button onClick={() => setIsRegisterMode(false)} className="text-accent hover:underline font-semibold focus:outline-none">
-              Login
+            <button type="button" onClick={() => setIsRegisterMode(false)} className="text-slate-800 font-medium hover:underline">
+              Sign in
             </button>
           </p>
         ) : (
-          <p className="text-slate-600 dark:text-slate-300">
+          <p className="text-slate-600 text-xs">
             Don't have an account?{' '}
-            <button onClick={() => setIsRegisterMode(true)} className="text-accent hover:underline font-semibold focus:outline-none">
-              Register
+            <button type="button" onClick={() => setIsRegisterMode(true)} className="text-slate-800 font-medium hover:underline">
+              Create one
             </button>
           </p>
         )}
       </div>
 
-  {error && <p className="text-rose-500 text-sm mt-4 text-center">{error}</p>}
+  {error && <p className="text-red-500 text-xs mt-4 text-center">{error}</p>}
     </div>
   );
 }
