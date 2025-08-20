@@ -18,6 +18,13 @@ const PersonCard = ({ person, logic }) => (
   <div className="accent-surface dark:accent-surface shadow-md rounded-lg mb-4 overflow-hidden border border-slate-200/70 dark:border-slate-700/60">
     {/* Card Header */}
   <div className="flex items-center p-4 border-b accent-surface-soft dark:accent-surface-soft border-slate-200/70 dark:border-slate-700/60">
+    {person.profileImageUrl ? (
+      <img
+        className="h-12 w-12 rounded-full object-cover"
+        src={person.profileImageUrl}
+        alt="Profile"
+      />
+    ) : (
       <img
         className="h-12 w-12 rounded-full"
         src={`https://placehold.co/48x48/2c7a7b/ffffff?text=${
@@ -25,7 +32,8 @@ const PersonCard = ({ person, logic }) => (
         }`}
         alt=""
       />
-      <div className="ml-4">
+    )}
+    <div className="ml-4">
   <div className="text-lg font-bold text-black dark:text-white">
           {person.firstName} {person.lastName}
         </div>
@@ -270,13 +278,21 @@ export default function FamilyListPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
-                        <img
-                          className="h-10 w-10 rounded-full"
-                          src={`https://placehold.co/40x40/2c7a7b/ffffff?text=${
-                            person.firstName?.[0]?.toUpperCase() || '?'
-                          }`}
-                          alt=""
-                        />
+                        {person.profileImageUrl ? (
+                          <img
+                            className="h-10 w-10 rounded-full object-cover"
+                            src={person.profileImageUrl}
+                            alt="Profile"
+                          />
+                        ) : (
+                          <img
+                            className="h-10 w-10 rounded-full"
+                            src={`https://placehold.co/40x40/2c7a7b/ffffff?text=${
+                              person.firstName?.[0]?.toUpperCase() || '?'
+                            }`}
+                            alt=""
+                          />
+                        )}
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-black dark:text-white">

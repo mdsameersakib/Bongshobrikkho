@@ -50,11 +50,6 @@ export const calculateTreeLayout = (allPersons, userPerson, couples = []) => {
   const positions = new Map();
   const depths = [...new Set(connected.map((u) => u.depth))].sort((a, b) => a - b);
 
-  const centerOfUnit = (u) => {
-    const pos = positions.get(u.id);
-    if (!pos) return undefined;
-    return pos.x + unitWidth(u) / 2;
-  };
 
   depths.forEach((depth) => {
     const levelUnits = connected.filter(u => u.depth === depth);

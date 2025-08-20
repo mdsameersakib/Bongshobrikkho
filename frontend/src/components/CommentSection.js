@@ -33,15 +33,22 @@ export default function CommentSection({ postId }) {
     }
   };
 
+  // Helper to get profile image for a user
+  const getProfileImage = (uid, email, name) => {
+    const person = allPersons.find(p => p.claimedByUid === uid);
+    if (person && person.profileImageUrl) return person.profileImageUrl;
+    return `https://placehold.co/32x32/2c7a7b/ffffff?text=${(name?.[0] || email?.[0] || 'U').toUpperCase()}`;
+  };
+
   return (
     <div className="mt-6 pt-4 border-t border-black/10 dark:border-white/10 space-y-4">
       {comments.map(comment => {
         const name = comment.authorName || getDisplayName(comment.authorUid, comment.authorEmail, allPersons) || 'Unknown';
-        const initial = name.charAt(0).toUpperCase();
+        const profileImg = getProfileImage(comment.authorUid, comment.authorEmail, name);
         return (
           <div key={comment.id} className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full accent-surface flex items-center justify-center text-[11px] font-semibold text-black dark:text-white border border-black/5 dark:border-white/10">
-              {initial}
+            <div className="w-8 h-8 rounded-full accent-surface flex items-center justify-center text-[11px] font-semibold text-black dark:text-white border border-black/5 dark:border-white/10 overflow-hidden">
+              <img src={profileImg} alt={name} className="w-8 h-8 rounded-full object-cover" />
             </div>
             <div className="accent-surface-soft border border-black/5 dark:border-white/10 rounded-lg p-3 flex-1">
               <p className="font-semibold text-sm text-black dark:text-white leading-snug mb-0.5 break-words">{name}</p>
@@ -57,8 +64,8 @@ export default function CommentSection({ postId }) {
 
       {user && (
         <form onSubmit={handleAddComment} className="flex items-start gap-3 pt-2">
-          <div className="w-8 h-8 rounded-full accent-surface flex items-center justify-center text-[11px] font-semibold text-black dark:text-white border border-black/5 dark:border-white/10">
-            {(getDisplayName(user.uid, user.email, allPersons)[0] || 'U').toUpperCase()}
+          <div className="w-8 h-8 rounded-full accent-surface flex items-center justify-center text-[11px] font-semibold text-black dark:text-white border border-black/5 dark:border-white/10 overflow-hidden">
+            <img src={getProfileImage(user.uid, user.email, getDisplayName(user.uid, user.email, allPersons))} alt="Me" className="w-8 h-8 rounded-full object-cover" />
           </div>
             <div className="flex-1">
               <div className="accent-surface-soft rounded-full border border-transparent focus-within:border-accent/60 focus-within:ring-2 focus-within:ring-[--accent] transition">

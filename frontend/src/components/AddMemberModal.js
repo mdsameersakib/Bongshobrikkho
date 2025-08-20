@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
+import useCloudinaryUpload from '../hooks/useCloudinaryUpload';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
 
 export default function AddMemberModal({ existingPerson, onSave, onClose }) {
   const [newPersonData, setNewPersonData] = useState({
-    firstName: '', lastName: '', gender: 'Male', birthDate: '',
+    firstName: '', lastName: '', gender: 'Male', birthDate: '', profileImageUrl: ''
   });
+  const { upload, uploading, error: uploadError } = useCloudinaryUpload();
   const [relationshipType, setRelationshipType] = useState('child');
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setNewPersonData(prevState => ({ ...prevState, [name]: value }));
+  };
+
+  const handleProfileImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const imageUrl = await upload(file);
+    if (imageUrl) {
+      setNewPersonData(prev => ({ ...prev, profileImageUrl: imageUrl }));
+    }
   };
 
   const handleSave = (e) => {
@@ -60,6 +71,31 @@ export default function AddMemberModal({ existingPerson, onSave, onClose }) {
                         <option value="Other">Other</option>
                     </select>
                     <input type="date" name="birthDate" value={newPersonData.birthDate} onChange={handleFormChange} className="w-full p-2 border border-gray-300 rounded-lg" />
+                </div>
+                {/* Profile Image Upload */}
+                <div className="mt-4 flex flex-col items-center">
+                  <label htmlFor="profile-upload" className="cursor-pointer group relative">
+                    <div className="h-20 w-20 rounded-full bg-slate-200 flex items-center justify-center text-2xl font-bold text-slate-500 select-none overflow-hidden">
+                      {newPersonData.profileImageUrl ? (
+                        <img src={newPersonData.profileImageUrl} alt="Profile" className="h-full w-full object-cover" />
+                      ) : (
+                        (newPersonData.firstName || '?')[0]?.toUpperCase()
+                      )}
+                    </div>
+                    <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center transition-opacity">
+                      <span className="text-white opacity-0 group-hover:opacity-100 text-xs">Add Photo</span>
+                    </div>
+                  </label>
+                  <input
+                    id="profile-upload"
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleProfileImageUpload}
+                    disabled={uploading}
+                  />
+                  {uploading && <span className="text-xs mt-2 text-slate-500">Uploading...</span>}
+                  {uploadError && <span className="text-xs mt-2 text-red-500">{uploadError}</span>}
                 </div>
             </div>
 
