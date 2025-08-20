@@ -29,7 +29,7 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
 
   return (
     <div className="w-full mx-auto">
-      <h2 className="text-xl font-semibold tracking-tight text-center mb-6 text-slate-800">
+      <h2 className="text-xl font-semibold tracking-tight text-center mb-6 text-slate-800 dark:text-white">
         {isRegisterMode ? 'Create your account' : 'Sign in'}
       </h2>
 
@@ -42,7 +42,7 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
-            className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40"
+            className="w-full h-11 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 text-sm placeholder-slate-400 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40 dark:focus:ring-slate-500/40 text-slate-900 dark:text-slate-100"
             aria-label="Email address"
             required
           />
@@ -55,7 +55,7 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
-            className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40"
+            className="w-full h-11 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 text-sm placeholder-slate-400 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40 dark:focus:ring-slate-500/40 text-slate-900 dark:text-slate-100"
             aria-label="Password"
             required
           />
@@ -70,7 +70,7 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
               value={invitationCode}
               onChange={(e) => setInvitationCode(e.target.value)}
               placeholder="Invitation Code (Optional)"
-              className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40"
+              className="w-full h-11 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 text-sm placeholder-slate-400 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40 dark:focus:ring-slate-500/40 text-slate-900 dark:text-slate-100"
               aria-label="Invitation Code"
             />
           </div>
@@ -78,13 +78,13 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
         
         {/* --- NEW: Conditionally rendered detail fields --- */}
         {showDetailFields && (
-            <div className="space-y-4 pt-4 border-t border-slate-200">
+            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <input
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="First Name"
-                className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/40"
+                className="w-full h-11 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/40 dark:focus:ring-slate-500/40 text-slate-900 dark:text-slate-100"
                 required
               />
               <input
@@ -92,16 +92,16 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Last Name"
-                className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/40"
+                className="w-full h-11 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/40 dark:focus:ring-slate-500/40 text-slate-900 dark:text-slate-100"
               />
               <div>
-                <label htmlFor="birthDate" className="text-xs font-medium text-slate-500 px-1">Birthdate</label>
+                <label htmlFor="birthDate" className="text-xs font-medium text-slate-500 dark:text-slate-400 px-1">Birthdate</label>
                 <input
                   id="birthDate"
                   type="date"
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/40 mt-1"
+                  className="w-full h-11 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400/40 dark:focus:ring-slate-500/40 mt-1 text-slate-900 dark:text-slate-100"
                 />
               </div>
             </div>
@@ -110,7 +110,7 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
 
         {/* Action Buttons */}
         <div className="pt-2">
-          <button type="submit" disabled={loading} className="w-full h-11 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="submit" disabled={loading} className="w-full h-11 rounded-lg bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 text-sm font-medium hover:bg-slate-700 dark:hover:bg-slate-200 transition disabled:opacity-50 disabled:cursor-not-allowed">
             {loading ? (isRegisterMode ? 'Registering...' : 'Logging in...') : (isRegisterMode ? 'Create Account' : 'Sign In')}
           </button>
         </div>
@@ -118,23 +118,23 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
 
       <div className="mt-6 text-center">
         {isRegisterMode ? (
-          <p className="text-slate-600 text-xs">
+          <p className="text-slate-600 dark:text-slate-300 text-xs">
             Already have an account?{' '}
-            <button type="button" onClick={() => setIsRegisterMode(false)} className="text-slate-800 font-medium hover:underline">
+            <button type="button" onClick={() => setIsRegisterMode(false)} className="text-slate-800 dark:text-white font-medium hover:underline">
               Sign in
             </button>
           </p>
         ) : (
-          <p className="text-slate-600 text-xs">
+          <p className="text-slate-600 dark:text-slate-300 text-xs">
             Don't have an account?{' '}
-            <button type="button" onClick={() => setIsRegisterMode(true)} className="text-slate-800 font-medium hover:underline">
+            <button type="button" onClick={() => setIsRegisterMode(true)} className="text-slate-800 dark:text-white font-medium hover:underline">
               Create one
             </button>
           </p>
         )}
       </div>
 
-  {error && <p className="text-red-500 text-xs mt-4 text-center">{error}</p>}
+  {error && <p className="text-red-500 dark:text-red-400 text-xs mt-4 text-center">{error}</p>}
     </div>
   );
 }
