@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import useCloudinaryUpload from '../hooks/useCloudinaryUpload';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
 
 export default function EditMemberModal({ person, onSave, onClose }) {
-  // The state now includes the new date fields
   const [personData, setPersonData] = useState({
     firstName: '',
     lastName: '',
     gender: 'Male',
     birthDate: '',
-    marriageDate: '', // <-- New field
-    deathDate: '',    // <-- New field
+    marriageDate: '',
+    deathDate: '',
+    profileImageUrl: '',
   });
+  const { upload, uploading, error: uploadError } = useCloudinaryUpload();
 
-  // When the 'person' prop is available, populate the form state
   useEffect(() => {
     if (person) {
       setPersonData({
@@ -21,11 +22,21 @@ export default function EditMemberModal({ person, onSave, onClose }) {
         lastName: person.lastName || '',
         gender: person.gender || 'Male',
         birthDate: person.birthDate || '',
-        marriageDate: person.marriageDate || '', // <-- Populate new field
-        deathDate: person.deathDate || '',      // <-- Populate new field
+        marriageDate: person.marriageDate || '',
+        deathDate: person.deathDate || '',
+        profileImageUrl: person.profileImageUrl || '',
       });
     }
   }, [person]);
+
+  const handleProfileImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const imageUrl = await upload(file);
+    if (imageUrl) {
+      setPersonData(prev => ({ ...prev, profileImageUrl: imageUrl }));
+    }
+  };
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -38,7 +49,6 @@ export default function EditMemberModal({ person, onSave, onClose }) {
       alert("First name is required.");
       return;
     }
-    // Pass the person's ID and the updated data (including new fields) back to the parent
     onSave(person.id, personData);
   };
 
@@ -70,6 +80,31 @@ export default function EditMemberModal({ person, onSave, onClose }) {
                   <option value="Other">Other</option>
                 </select>
                 <input type="date" name="birthDate" value={personData.birthDate} onChange={handleFormChange} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" />
+              </div>
+              {/* Profile Image Upload */}
+              <div className="mt-4 flex flex-col items-center">
+                <label htmlFor="profile-upload-edit" className="cursor-pointer group relative">
+                  <div className="h-20 w-20 rounded-full bg-slate-200 flex items-center justify-center text-2xl font-bold text-slate-500 select-none overflow-hidden">
+                    {personData.profileImageUrl ? (
+                      <img src={personData.profileImageUrl} alt="Profile" className="h-full w-full object-cover" />
+                    ) : (
+                      (personData.firstName || '?')[0]?.toUpperCase()
+                    )}
+                  </div>
+                  <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center transition-opacity">
+                    <span className="text-white opacity-0 group-hover:opacity-100 text-xs">Change Photo</span>
+                  </div>
+                </label>
+                <input
+                  id="profile-upload-edit"
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleProfileImageUpload}
+                  disabled={uploading}
+                />
+                {uploading && <span className="text-xs mt-2 text-slate-500">Uploading...</span>}
+                {uploadError && <span className="text-xs mt-2 text-red-500">{uploadError}</span>}
               </div>
             </div>
 

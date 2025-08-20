@@ -10,6 +10,8 @@ import {
   Timestamp,
   doc,
   updateDoc,
+  deleteDoc, // Import deleteDoc
+  getDoc,    // Import getDoc for security check
   deleteField,
 } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
@@ -68,13 +70,19 @@ export default function useFamilyWall() {
     return () => unsubscribe();
   }, [user, connections, allPersons]);
 
-  const createPost = async (content) => {
-    if (!content.trim() || !user) return;
+  const createPost = async (content, imageUrl = '') => {
+    if (!content.trim() && !imageUrl) {
+        setError('Post cannot be empty.');
+        return;
+    }
+    if (!user) return;
+
     setLoading(true);
     setError('');
     try {
       await addDoc(collection(db, 'posts'), {
         content: content,
+        imageUrl: imageUrl,
         authorUid: user.uid,
         authorEmail: user.email,
         authorName: getDisplayName(user.uid, user.email, allPersons),
@@ -87,6 +95,51 @@ export default function useFamilyWall() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // --- NEW FUNCTION TO UPDATE A POST ---
+  const updatePost = async (postId, newContent) => {
+    if (!user) return;
+    setLoading(true);
+    setError('');
+    const postRef = doc(db, 'posts', postId);
+    try {
+        // Security check: ensure the user owns the post
+        const postSnap = await getDoc(postRef);
+        if (postSnap.data().authorUid !== user.uid) {
+            throw new Error("You don't have permission to edit this post.");
+        }
+        await updateDoc(postRef, {
+            content: newContent,
+            updatedAt: Timestamp.now() // Optional: track edits
+        });
+    } catch (err) {
+        setError('Failed to update post.');
+        console.error(err);
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  // --- NEW FUNCTION TO DELETE A POST ---
+  const deletePost = async (postId) => {
+      if (!user) return;
+      setLoading(true);
+      setError('');
+      const postRef = doc(db, 'posts', postId);
+      try {
+          // Security check: ensure the user owns the post
+          const postSnap = await getDoc(postRef);
+          if (postSnap.data().authorUid !== user.uid) {
+              throw new Error("You don't have permission to delete this post.");
+          }
+          await deleteDoc(postRef);
+      } catch (err) {
+          setError('Failed to delete post.');
+          console.error(err);
+      } finally {
+          setLoading(false);
+      }
   };
 
   const handleReaction = async (postId, reactionType) => {
@@ -109,5 +162,6 @@ export default function useFamilyWall() {
     }
   };
 
-  return { posts, error, loading, createPost, handleReaction };
+  // --- EXPORT THE NEW FUNCTIONS ---
+  return { posts, error, loading, createPost, handleReaction, updatePost, deletePost };
 }

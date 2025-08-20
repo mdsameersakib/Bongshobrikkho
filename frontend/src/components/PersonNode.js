@@ -13,22 +13,26 @@ export default function PersonNode({ person, relationship, style }) {
 
   return (
     <div
-      id={person.id} // Add ID for the centering function to find the element
+      id={person.id}
       data-x={style.x}
       data-y={style.y}
       className="absolute bg-white dark:bg-slate-900 rounded-xl shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 border border-slate-200 dark:border-slate-700/80"
       style={{
-        width: 220, // New width
-        height: 90,  // New height
+        width: 220,
+        height: 90,
         transform: `translate(${style.x}px, ${style.y}px)`,
       }}
     >
-      <div className={`h-full w-full p-3 flex items-center border-2 ${genderColor} rounded-xl backdrop-blur-sm`}>        
+      <div className={`h-full w-full p-3 flex items-center border-2 ${genderColor} rounded-xl backdrop-blur-sm`}>
         {/* Avatar */}
-        <div className="flex-shrink-0 h-16 w-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center border-2 border-inherit">
-          <span className="text-3xl font-thin text-black/70 dark:text-white/70">{avatarLetter}</span>
+        <div className="flex-shrink-0 h-16 w-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center border-2 border-inherit overflow-hidden">
+          {person.profileImageUrl ? (
+            <img src={person.profileImageUrl} alt="Profile" className="h-full w-full object-cover rounded-full" />
+          ) : (
+            <span className="text-3xl font-thin text-black/70 dark:text-white/70">{avatarLetter}</span>
+          )}
         </div>
-        
+
         {/* Details */}
         <div className="ml-4 overflow-hidden">
           <p className="font-bold text-black dark:text-white text-lg truncate" title={`${person.firstName} ${person.lastName}`}>

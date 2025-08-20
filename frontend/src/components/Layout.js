@@ -27,10 +27,13 @@ const SidebarLink = ({ to, children, emoji }) => {
 
 export default function Layout({ handleLogout }) {
   const { user } = useAuth();
-  const { allPersons } = usePersons();
+  const { allPersons, userPerson } = usePersons();
   const displayName = getDisplayName(user?.uid, user?.email, allPersons);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { resolvedMode, toggleMode } = useTheme();
+
+  // Use user's profile image if available
+  const userProfileImage = userPerson?.profileImageUrl;
 
   return (
   <div className="app-shell flex h-screen font-sans bg-slate-50 dark:bg-slate-900 text-black dark:text-white transition-colors">
@@ -48,18 +51,26 @@ export default function Layout({ handleLogout }) {
     <SidebarLink to="/settings" emoji="⚙️">Settings</SidebarLink>
         </nav>
     <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-          <div className="flex items-center">
-            <img 
-              src={`https://placehold.co/40x40/2c7a7b/ffffff?text=${displayName?.[0] || 'U'}`} 
-              alt="User Avatar" 
-              className="rounded-full h-10 w-10"
-            />
-            <div className="ml-3">
-      <p className="text-sm font-semibold truncate text-slate-800 dark:text-slate-100">{displayName}</p>
-    <button onClick={toggleMode} className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center gap-1">{resolvedMode==='dark'? <><FontAwesomeIcon icon={faSun}/> Light</>:<><FontAwesomeIcon icon={faMoon}/> Dark</>} Mode</button>
-            </div>
-          </div>
+      <div className="flex items-center">
+        {userProfileImage ? (
+          <img
+            src={userProfileImage}
+            alt="User Avatar"
+            className="rounded-full h-10 w-10 object-cover"
+          />
+        ) : (
+          <img
+            src={`https://placehold.co/40x40/2c7a7b/ffffff?text=${displayName?.[0] || 'U'}`}
+            alt="User Avatar"
+            className="rounded-full h-10 w-10"
+          />
+        )}
+        <div className="ml-3">
+          <p className="text-sm font-semibold truncate text-slate-800 dark:text-slate-100">{displayName}</p>
+          <button onClick={toggleMode} className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center gap-1">{resolvedMode==='dark'? <><FontAwesomeIcon icon={faSun}/> Light</>:<><FontAwesomeIcon icon={faMoon}/> Dark</>} Mode</button>
         </div>
+      </div>
+    </div>
       </aside>
 
       {/* --- Mobile Sidebar (Managed by state) --- */}
