@@ -42,7 +42,7 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
-            className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40"
+            className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40 text-slate-900"
             aria-label="Email address"
             required
           />
@@ -55,7 +55,7 @@ function Auth({ handleLogin, handleRegister, error, loading }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
-            className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40"
+            className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/40 text-slate-900"
             aria-label="Password"
             required
           />
