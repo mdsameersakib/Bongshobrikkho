@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getDisplayName } from '../utils/displayName';
 import usePersons from '../hooks/usePersons';
 import useFamilyWall from '../hooks/useFamilyWall';
 import useCloudinaryUpload from '../hooks/useCloudinaryUpload';
 import CommentSection from '../components/CommentSection';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEllipsisH, faEdit, faTrash, faCamera, faThumbsUp, faHeart, faLaughSquint } from '@fortawesome/free-solid-svg-icons';
 
 export default function FamilyWallPage() {
     const { user } = useAuth();
@@ -29,19 +31,11 @@ export default function FamilyWallPage() {
     const [editingPostId, setEditingPostId] = useState(null);
     const [editedContent, setEditedContent] = useState('');
     const [openMenuId, setOpenMenuId] = useState(null);
-    const menuRef = useRef(null);
 
     useEffect(() => {
-        function handleClickOutside(event) {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setOpenMenuId(null);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [menuRef]);
+        // Optional: Add click outside to close menu
+        // For now, we'll rely on clicking the menu button to toggle
+    }, []);
 
     const handleCreatePost = async (e) => {
         e.preventDefault();
@@ -133,7 +127,7 @@ export default function FamilyWallPage() {
                         {imagePreviewUrl && (<div className="mt-4 pl-14"><img src={imagePreviewUrl} alt="Preview" className="rounded-lg max-h-60" /></div>)}
                         <div className="flex justify-between items-center mt-3">
                             <div>
-                                <label htmlFor="wall-image-input" className="cursor-pointer text-slate-500 hover:text-accent"><i className="fas fa-camera mr-2"></i>Add Photo</label>
+                                <label htmlFor="wall-image-input" className="cursor-pointer text-slate-500 hover:text-accent"><FontAwesomeIcon icon={faCamera} className="mr-2" />Add Photo</label>
                                 <input id="wall-image-input" type="file" className="hidden" accept="image/*" onChange={handleFileChange} disabled={uploading} />
                             </div>
                             <button onClick={handleCreatePost} disabled={loading || uploading} className="btn btn-primary font-semibold py-2 px-6 rounded-lg shadow transition-transform transform hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed">
@@ -169,14 +163,28 @@ export default function FamilyWallPage() {
                                         <p className="text-xs text-slate-500 dark:text-slate-400">{post.createdAt ? new Date(post.createdAt.toDate()).toLocaleString() : 'Just now'}</p>
                                     </div>
                                     {user && user.uid === post.authorUid && !isEditing && (
-                                        <div className="ml-auto relative" ref={menuRef}>
-                                            <button onClick={() => setOpenMenuId(openMenuId === post.id ? null : post.id)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-full">
-                                                <i className="fas fa-ellipsis-h"></i>
+                                        <div className="ml-auto relative">
+                                            <button 
+                                                onClick={() => setOpenMenuId(openMenuId === post.id ? null : post.id)} 
+                                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                                aria-label="Post options"
+                                            >
+                                                <FontAwesomeIcon icon={faEllipsisH} />
                                             </button>
                                             {openMenuId === post.id && (
-                                                <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-slate-800 rounded-md shadow-lg z-10 border border-slate-200 dark:border-slate-700">
-                                                    <button onClick={() => handleEditClick(post)} className="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Edit</button>
-                                                    <button onClick={() => handleDeleteClick(post.id)} className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700">Delete</button>
+                                                <div className="absolute right-0 mt-1 w-32 bg-white dark:bg-slate-800 rounded-md shadow-lg z-20 border border-slate-200 dark:border-slate-700">
+                                                    <button 
+                                                        onClick={() => handleEditClick(post)} 
+                                                        className="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-t-md transition-colors"
+                                                    >
+                                                        <FontAwesomeIcon icon={faEdit} className="mr-2" />Edit
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDeleteClick(post.id)} 
+                                                        className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-b-md transition-colors"
+                                                    >
+                                                        <FontAwesomeIcon icon={faTrash} className="mr-2" />Delete
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -201,13 +209,13 @@ export default function FamilyWallPage() {
                                 {!isEditing && user && (
                                     <div className="flex items-center space-x-4 border-t border-slate-200 dark:border-slate-800 pt-2">
                                         <button onClick={() => handleReaction(post.id, 'like')} className={`reaction-btn text-sm flex items-center space-x-2 transition-colors ${currentUserReaction === 'like' ? 'text-blue-600 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-blue-600'}`}>
-                                            <i className="far fa-thumbs-up"></i><span>Like {likeCount > 0 && `(${likeCount})`}</span>
+                                            <FontAwesomeIcon icon={faThumbsUp} /><span>Like {likeCount > 0 && `(${likeCount})`}</span>
                                         </button>
                                         <button onClick={() => handleReaction(post.id, 'love')} className={`reaction-btn text-sm flex items-center space-x-2 transition-colors ${currentUserReaction === 'love' ? 'text-red-500 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-red-500'}`}>
-                                            <i className="far fa-heart"></i><span>Love {loveCount > 0 && `(${loveCount})`}</span>
+                                            <FontAwesomeIcon icon={faHeart} /><span>Love {loveCount > 0 && `(${loveCount})`}</span>
                                         </button>
                                         <button onClick={() => handleReaction(post.id, 'haha')} className={`reaction-btn text-sm flex items-center space-x-2 transition-colors ${currentUserReaction === 'haha' ? 'text-yellow-500 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-yellow-500'}`}>
-                                            <i className="far fa-laugh-squint"></i><span>Haha {hahaCount > 0 && `(${hahaCount})`}</span>
+                                            <FontAwesomeIcon icon={faLaughSquint} /><span>Haha {hahaCount > 0 && `(${hahaCount})`}</span>
                                         </button>
                                     </div>
                                 )}

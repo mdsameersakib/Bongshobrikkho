@@ -4,19 +4,19 @@ import { faTimes } from '@fortawesome/free-solid-svg-icons';
 
 // A reusable form section for a single person's details
 const PersonForm = ({ title, personData, onFormChange, prefix, disabledGender = false }) => (
-    <div>
-        <p className="block text-sm font-medium text-gray-700 mb-2">{title}</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input name={`${prefix}FirstName`} value={personData[`${prefix}FirstName`]} onChange={onFormChange} placeholder="First Name" required className="w-full p-2 border border-gray-300 rounded-lg" />
-            <input name={`${prefix}LastName`} value={personData[`${prefix}LastName`]} onChange={onFormChange} placeholder="Last Name" className="w-full p-2 border border-gray-300 rounded-lg" />
-            <select name={`${prefix}Gender`} value={personData[`${prefix}Gender`]} disabled={disabledGender} onChange={onFormChange} className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 disabled:opacity-75">
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-            </select>
-            <input type="date" name={`${prefix}BirthDate`} value={personData[`${prefix}BirthDate`]} onChange={onFormChange} className="w-full p-2 border border-gray-300 rounded-lg" />
-        </div>
+  <div>
+    <p className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">{title}</p>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <input name={`${prefix}FirstName`} value={personData[`${prefix}FirstName`]} onChange={onFormChange} placeholder="First Name" required className="input" />
+      <input name={`${prefix}LastName`} value={personData[`${prefix}LastName`]} onChange={onFormChange} placeholder="Last Name" className="input" />
+      <select name={`${prefix}Gender`} value={personData[`${prefix}Gender`]} disabled={disabledGender} onChange={onFormChange} className="input bg-gray-50 dark:bg-slate-800 disabled:opacity-75">
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+      </select>
+      <input type="date" name={`${prefix}BirthDate`} value={personData[`${prefix}BirthDate`]} onChange={onFormChange} className="input" />
     </div>
+  </div>
 );
 
 export default function AddCoupleModal({ person, relationshipType, onSave, onClose }) {
@@ -50,17 +50,17 @@ export default function AddCoupleModal({ person, relationshipType, onSave, onClo
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl animate-fade-in-scale">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-2xl animate-fade-in-scale border border-slate-200 dark:border-slate-700">
         <form onSubmit={handleSave} className="p-6">
-          <div className="flex items-center justify-between pb-4 border-b">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
             <div>
-              <h3 className="text-xl font-bold text-gray-800">{isAddingParents ? 'Add Parents' : 'Add Spouse'}</h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white">{isAddingParents ? 'Add Parents' : 'Add Spouse'}</h3>
+              <p className="text-sm text-gray-500 dark:text-slate-300">
                 {isAddingParents ? `Adding parents to: ` : `Adding spouse to: `}
-                <span className="font-semibold text-teal-600">{person.firstName} {person.lastName}</span>
+                <span className="font-semibold text-teal-600 dark:text-teal-400">{person.firstName} {person.lastName}</span>
               </p>
             </div>
-            <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200">
               <FontAwesomeIcon icon={faTimes} size="lg" />
             </button>
           </div>
@@ -68,22 +68,22 @@ export default function AddCoupleModal({ person, relationshipType, onSave, onClo
             {isAddingParents && (
               <>
                 <PersonForm title="Father's Details" personData={formData} onFormChange={handleFormChange} prefix="father" disabledGender={true}/>
-                <hr/>
+                <hr className="border-slate-200 dark:border-slate-700"/>
                 <PersonForm title="Mother's Details" personData={formData} onFormChange={handleFormChange} prefix="mother" disabledGender={true}/>
               </>
             )}
             {isAddingSpouse && (
               <PersonForm title="New Spouse's Details" personData={formData} onFormChange={handleFormChange} prefix="spouse" />
             )}
-            <hr/>
+            <hr className="border-slate-200 dark:border-slate-700"/>
             <div>
-              <label htmlFor="marriageDate" className="block text-sm font-medium text-gray-700 mb-1">Marriage Date (Optional)</label>
-              <input id="marriageDate" name="marriageDate" type="date" value={formData.marriageDate} onChange={handleFormChange} className="w-full md:w-1/2 p-2 border border-gray-300 rounded-lg" />
+              <label htmlFor="marriageDate" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Marriage Date (Optional)</label>
+              <input id="marriageDate" name="marriageDate" type="date" value={formData.marriageDate} onChange={handleFormChange} className="input md:w-1/2" />
             </div>
           </div>
-          <div className="flex justify-end pt-6 border-t mt-6 space-x-3">
-            <button type="button" onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300">Cancel</button>
-            <button type="submit" className="px-6 py-2 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 shadow-md">Save</button>
+          <div className="flex justify-end pt-6 border-t border-slate-200 dark:border-slate-700 mt-6 space-x-3">
+            <button type="button" onClick={onClose} className="btn btn-ghost">Cancel</button>
+            <button type="submit" className="btn btn-primary shadow-md">Save</button>
           </div>
         </form>
       </div>
