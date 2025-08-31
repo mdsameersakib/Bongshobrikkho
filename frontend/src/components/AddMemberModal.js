@@ -37,45 +37,45 @@ export default function AddMemberModal({ existingPerson, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg animate-fade-in-scale">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-lg animate-fade-in-scale border border-slate-200 dark:border-slate-700">
         <div className="p-6">
-          <div className="flex items-center justify-between pb-4 border-b">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
             <div>
-              <h3 className="text-xl font-bold text-gray-800">Add a New Relative</h3>
-              <p className="text-sm text-gray-500">Adding relative to: <span className="font-semibold text-teal-600">{existingPerson.firstName} {existingPerson.lastName}</span></p>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white">Add a New Relative</h3>
+              <p className="text-sm text-gray-500 dark:text-slate-300">Adding relative to: <span className="font-semibold text-teal-600 dark:text-teal-400">{existingPerson.firstName} {existingPerson.lastName}</span></p>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200">
               <FontAwesomeIcon icon={faTimes} size="lg" />
             </button>
           </div>
 
           <form onSubmit={handleSave} className="mt-6 space-y-4">
             <div>
-              <label htmlFor="relationshipType" className="block text-sm font-medium text-gray-700 mb-1">Relationship to {existingPerson.firstName}</label>
-              <select id="relationshipType" value={relationshipType} onChange={(e) => setRelationshipType(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg">
+              <label htmlFor="relationshipType" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Relationship to {existingPerson.firstName}</label>
+              <select id="relationshipType" value={relationshipType} onChange={(e) => setRelationshipType(e.target.value)} className="input">
                 <option value="child">Child (Son/Daughter)</option>
                 <option value="sibling" disabled={!hasParents} title={!hasParents ? "Add parents to this person first" : ""}>Sibling (Brother/Sister)</option>
               </select>
             </div>
 
-            <hr/>
+            <hr className="border-slate-200 dark:border-slate-700"/>
 
             <div>
-                <p className="block text-sm font-medium text-gray-700 mb-2">New Person's Details</p>
+                <p className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">New Person's Details</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input name="firstName" value={newPersonData.firstName} onChange={handleFormChange} placeholder="First Name" required className="w-full p-2 border border-gray-300 rounded-lg" />
-                    <input name="lastName" value={newPersonData.lastName} onChange={handleFormChange} placeholder="Last Name" className="w-full p-2 border border-gray-300 rounded-lg" />
-                    <select name="gender" value={newPersonData.gender} onChange={handleFormChange} className="w-full p-2 border border-gray-300 rounded-lg">
+                    <input name="firstName" value={newPersonData.firstName} onChange={handleFormChange} placeholder="First Name" required className="input" />
+                    <input name="lastName" value={newPersonData.lastName} onChange={handleFormChange} placeholder="Last Name" className="input" />
+                    <select name="gender" value={newPersonData.gender} onChange={handleFormChange} className="input">
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
                         <option value="Other">Other</option>
                     </select>
-                    <input type="date" name="birthDate" value={newPersonData.birthDate} onChange={handleFormChange} className="w-full p-2 border border-gray-300 rounded-lg" />
+                    <input type="date" name="birthDate" value={newPersonData.birthDate} onChange={handleFormChange} className="input" />
                 </div>
                 {/* Profile Image Upload */}
                 <div className="mt-4 flex flex-col items-center">
                   <label htmlFor="profile-upload" className="cursor-pointer group relative">
-                    <div className="h-20 w-20 rounded-full bg-slate-200 flex items-center justify-center text-2xl font-bold text-slate-500 select-none overflow-hidden">
+                    <div className="h-20 w-20 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-2xl font-bold text-slate-500 dark:text-slate-300 select-none overflow-hidden">
                       {newPersonData.profileImageUrl ? (
                         <img src={newPersonData.profileImageUrl} alt="Profile" className="h-full w-full object-cover" />
                       ) : (
@@ -94,14 +94,14 @@ export default function AddMemberModal({ existingPerson, onSave, onClose }) {
                     onChange={handleProfileImageUpload}
                     disabled={uploading}
                   />
-                  {uploading && <span className="text-xs mt-2 text-slate-500">Uploading...</span>}
+                  {uploading && <span className="text-xs mt-2 text-slate-500 dark:text-slate-300">Uploading...</span>}
                   {uploadError && <span className="text-xs mt-2 text-red-500">{uploadError}</span>}
                 </div>
             </div>
 
-            <div className="flex justify-end pt-6 border-t space-x-3 mt-6">
-              <button type="button" onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300">Cancel</button>
-              <button type="submit" className="px-6 py-2 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 shadow-md">Save Relationship</button>
+            <div className="flex justify-end pt-6 border-t border-slate-200 dark:border-slate-700 space-x-3 mt-6">
+              <button type="button" onClick={onClose} className="btn btn-ghost">Cancel</button>
+              <button type="submit" className="btn btn-primary shadow-md">Save Relationship</button>
             </div>
           </form>
         </div>
