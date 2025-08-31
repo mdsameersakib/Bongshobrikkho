@@ -80,7 +80,7 @@ export function ThemeProvider({ children }) {
     setAccent,
     accents: ACCENTS,
     resolvedMode,
-    toggleMode: useCallback(() => setMode(m => m === 'dark' ? 'light' : 'dark'), [])
+    toggleMode: useCallback(() => setMode(m => m === 'dark' ? 'light' : m === 'light' ? 'system' : 'dark'), [])
   };
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

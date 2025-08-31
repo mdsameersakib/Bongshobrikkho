@@ -1,17 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getDisplayName } from '../utils/displayName';
 import usePersons from '../hooks/usePersons';
 import useFamilyWall from '../hooks/useFamilyWall';
 import useCloudinaryUpload from '../hooks/useCloudinaryUpload';
-import CommentSection from '../components/CommentSection';
+import { PostSkeleton, LoadingSpinner } from '../components/Skeletons';
+import { useToast } from '../context/ToastContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEllipsisH, faEdit, faTrash, faCamera, faThumbsUp, faHeart, faLaughSquint } from '@fortawesome/free-solid-svg-icons';
+
+// Lazy load the CommentSection component
+const CommentSection = lazy(() => import('../components/CommentSection'));
 
 export default function FamilyWallPage() {
     const { user } = useAuth();
     const { allPersons, userPerson } = usePersons();
     const myName = getDisplayName(user?.uid, user?.email, allPersons);
+    const { success, error: showError } = useToast();
 
     const { upload, uploading, error: uploadError } = useCloudinaryUpload();
     
@@ -39,18 +44,35 @@ export default function FamilyWallPage() {
 
     const handleCreatePost = async (e) => {
         e.preventDefault();
-        if (!newPostContent.trim() && !imageFile) return;
+        if (!newPostContent.trim() && !imageFile) {
+            showError('Please add some content or an image to your post');
+            return;
+        }
         let uploadedImageUrl = '';
         if (imageFile) {
-            uploadedImageUrl = await upload(imageFile);
-            if (!uploadedImageUrl) return;
+            try {
+                uploadedImageUrl = await upload(imageFile);
+                if (!uploadedImageUrl) {
+                    showError('Failed to upload image. Please try again.');
+                    return;
+                }
+            } catch (err) {
+                showError('Failed to upload image. Please try again.');
+                return;
+            }
         }
-        await createPost(newPostContent, uploadedImageUrl);
-        setNewPostContent('');
-        setImageFile(null);
-        setImagePreviewUrl('');
-        if (document.getElementById('wall-image-input')) {
-            document.getElementById('wall-image-input').value = '';
+        
+        try {
+            await createPost(newPostContent, uploadedImageUrl);
+            setNewPostContent('');
+            setImageFile(null);
+            setImagePreviewUrl('');
+            if (document.getElementById('wall-image-input')) {
+                document.getElementById('wall-image-input').value = '';
+            }
+            success('Post created successfully!');
+        } catch (err) {
+            showError('Failed to create post. Please try again.');
         }
     };
 
@@ -77,16 +99,36 @@ export default function FamilyWallPage() {
     };
 
     const handleSaveEdit = async (postId) => {
-        await updatePost(postId, editedContent);
-        setEditingPostId(null);
-        setEditedContent('');
+        if (!editedContent.trim()) {
+            showError('Post content cannot be empty');
+            return;
+        }
+        
+        try {
+            await updatePost(postId, editedContent);
+            setEditingPostId(null);
+            setEditedContent('');
+            success('Post updated successfully!');
+        } catch (err) {
+            showError('Failed to update post. Please try again.');
+        }
     };
 
     const handleDeleteClick = (postId) => {
         if (window.confirm("Are you sure you want to delete this post?")) {
-            deletePost(postId);
+            deletePost(postId)
+                .then(() => success('Post deleted successfully!'))
+                .catch(() => showError('Failed to delete post. Please try again.'));
         }
         setOpenMenuId(null);
+    };
+
+    const handleReactionClick = async (postId, reactionType) => {
+        try {
+            await handleReaction(postId, reactionType);
+        } catch (err) {
+            showError('Failed to update reaction. Please try again.');
+        }
     };
 
     const getReactionCount = (reactions, type) => {
@@ -139,91 +181,98 @@ export default function FamilyWallPage() {
                 )}
 
                 <div className="space-y-8">
-                    {posts.map((post) => {
-                        const reactions = post.reactions || {};
-                        const currentUserReaction = user ? reactions[user.uid] : null;
-                        const likeCount = getReactionCount(reactions, 'like');
-                        const loveCount = getReactionCount(reactions, 'love');
-                        const hahaCount = getReactionCount(reactions, 'haha');
-                        const isEditing = editingPostId === post.id;
+                    {loading ? (
+                        // Show skeleton loading states
+                        Array.from({ length: 3 }).map((_, index) => (
+                            <PostSkeleton key={index} />
+                        ))
+                    ) : (
+                        posts.map((post) => {
+                            const reactions = post.reactions || {};
+                            const currentUserReaction = user ? reactions[user.uid] : null;
+                            const likeCount = getReactionCount(reactions, 'like');
+                            const loveCount = getReactionCount(reactions, 'love');
+                            const hahaCount = getReactionCount(reactions, 'haha');
+                            const isEditing = editingPostId === post.id;
 
-                        return (
-                            <div key={post.id} className="bg-white dark:bg-slate-950 p-6 rounded-xl shadow-md">
-                                <div className="flex items-center mb-4">
-                                    <img 
-                                        // --- THIS IS THE FIX ---
-                                        // Was: post.authorId
-                                        // Now: post.authorUid
-                                        src={getAuthorAvatar(post.authorUid)} 
-                                        alt={post.authorName || post.authorEmail} 
-                                        className="h-12 w-12 rounded-full object-cover" 
-                                    />
-                                    <div className="ml-4">
-                                        <p className="font-semibold text-slate-900 dark:text-slate-100">{post.authorName || post.authorEmail}</p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">{post.createdAt ? new Date(post.createdAt.toDate()).toLocaleString() : 'Just now'}</p>
+                            return (
+                                <div key={post.id} className="bg-white dark:bg-slate-950 p-6 rounded-xl shadow-md">
+                                    <div className="flex items-center mb-4">
+                                        <img 
+                                            // --- THIS IS THE FIX ---
+                                            // Was: post.authorId
+                                            // Now: post.authorUid
+                                            src={getAuthorAvatar(post.authorUid)} 
+                                            alt={post.authorName || post.authorEmail} 
+                                            className="h-12 w-12 rounded-full object-cover" 
+                                        />
+                                        <div className="ml-4">
+                                            <p className="font-semibold text-slate-900 dark:text-slate-100">{post.authorName || post.authorEmail}</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">{post.createdAt ? new Date(post.createdAt.toDate()).toLocaleString() : 'Just now'}</p>
+                                        </div>
+                                        {user && user.uid === post.authorUid && !isEditing && (
+                                            <div className="ml-auto relative">
+                                                <button 
+                                                    onClick={() => setOpenMenuId(openMenuId === post.id ? null : post.id)} 
+                                                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                                    aria-label="Post options"
+                                                >
+                                                    <FontAwesomeIcon icon={faEllipsisH} />
+                                                </button>
+                                                {openMenuId === post.id && (
+                                                    <div className="absolute right-0 mt-1 w-32 bg-white dark:bg-slate-800 rounded-md shadow-lg z-20 border border-slate-200 dark:border-slate-700">
+                                                        <button 
+                                                            onClick={() => handleEditClick(post)} 
+                                                            className="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-t-md transition-colors"
+                                                        >
+                                                            <FontAwesomeIcon icon={faEdit} className="mr-2" />Edit
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDeleteClick(post.id)} 
+                                                            className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-b-md transition-colors"
+                                                        >
+                                                            <FontAwesomeIcon icon={faTrash} className="mr-2" />Delete
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
-                                    {user && user.uid === post.authorUid && !isEditing && (
-                                        <div className="ml-auto relative">
-                                            <button 
-                                                onClick={() => setOpenMenuId(openMenuId === post.id ? null : post.id)} 
-                                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                                                aria-label="Post options"
-                                            >
-                                                <FontAwesomeIcon icon={faEllipsisH} />
+                                    
+                                    {isEditing ? (
+                                        <div>
+                                            <textarea value={editedContent} onChange={(e) => setEditedContent(e.target.value)} className="w-full border rounded-md p-2 text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900" rows="4" />
+                                            <div className="flex justify-end gap-2 mt-2">
+                                                <button onClick={handleCancelEdit} className="btn text-sm">Cancel</button>
+                                                <button onClick={() => handleSaveEdit(post.id)} className="btn btn-primary text-sm">Save</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {post.content && (<p className="text-slate-700 dark:text-slate-200 mb-4 whitespace-pre-wrap">{post.content}</p>)}
+                                            {post.imageUrl && (<div className="mb-4"><img src={post.imageUrl} alt="Post content" className="rounded-lg w-full object-cover" /></div>)}
+                                        </>
+                                    )}
+
+                                    {!isEditing && user && (
+                                        <div className="flex items-center space-x-4 border-t border-slate-200 dark:border-slate-800 pt-2">
+                                            <button onClick={() => handleReactionClick(post.id, 'like')} className={`reaction-btn text-sm flex items-center space-x-2 transition-colors ${currentUserReaction === 'like' ? 'text-blue-600 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-blue-600'}`}>
+                                                <FontAwesomeIcon icon={faThumbsUp} /><span>Like {likeCount > 0 && `(${likeCount})`}</span>
                                             </button>
-                                            {openMenuId === post.id && (
-                                                <div className="absolute right-0 mt-1 w-32 bg-white dark:bg-slate-800 rounded-md shadow-lg z-20 border border-slate-200 dark:border-slate-700">
-                                                    <button 
-                                                        onClick={() => handleEditClick(post)} 
-                                                        className="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-t-md transition-colors"
-                                                    >
-                                                        <FontAwesomeIcon icon={faEdit} className="mr-2" />Edit
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleDeleteClick(post.id)} 
-                                                        className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-b-md transition-colors"
-                                                    >
-                                                        <FontAwesomeIcon icon={faTrash} className="mr-2" />Delete
-                                                    </button>
-                                                </div>
-                                            )}
+                                            <button onClick={() => handleReactionClick(post.id, 'love')} className={`reaction-btn text-sm flex items-center space-x-2 transition-colors ${currentUserReaction === 'love' ? 'text-red-500 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-red-500'}`}>
+                                                <FontAwesomeIcon icon={faHeart} /><span>Love {loveCount > 0 && `(${loveCount})`}</span>
+                                            </button>
+                                            <button onClick={() => handleReactionClick(post.id, 'haha')} className={`reaction-btn text-sm flex items-center space-x-2 transition-colors ${currentUserReaction === 'haha' ? 'text-yellow-500 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-yellow-500'}`}>
+                                                <FontAwesomeIcon icon={faLaughSquint} /><span>Haha {hahaCount > 0 && `(${hahaCount})`}</span>
+                                            </button>
                                         </div>
                                     )}
+                                    {!isEditing && <Suspense fallback={<LoadingSpinner />}><CommentSection postId={post.id} /></Suspense>}
                                 </div>
-                                
-                                {isEditing ? (
-                                    <div>
-                                        <textarea value={editedContent} onChange={(e) => setEditedContent(e.target.value)} className="w-full border rounded-md p-2 text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900" rows="4" />
-                                        <div className="flex justify-end gap-2 mt-2">
-                                            <button onClick={handleCancelEdit} className="btn text-sm">Cancel</button>
-                                            <button onClick={() => handleSaveEdit(post.id)} className="btn btn-primary text-sm">Save</button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {post.content && (<p className="text-slate-700 dark:text-slate-200 mb-4 whitespace-pre-wrap">{post.content}</p>)}
-                                        {post.imageUrl && (<div className="mb-4"><img src={post.imageUrl} alt="Post content" className="rounded-lg w-full object-cover" /></div>)}
-                                    </>
-                                )}
-
-                                {!isEditing && user && (
-                                    <div className="flex items-center space-x-4 border-t border-slate-200 dark:border-slate-800 pt-2">
-                                        <button onClick={() => handleReaction(post.id, 'like')} className={`reaction-btn text-sm flex items-center space-x-2 transition-colors ${currentUserReaction === 'like' ? 'text-blue-600 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-blue-600'}`}>
-                                            <FontAwesomeIcon icon={faThumbsUp} /><span>Like {likeCount > 0 && `(${likeCount})`}</span>
-                                        </button>
-                                        <button onClick={() => handleReaction(post.id, 'love')} className={`reaction-btn text-sm flex items-center space-x-2 transition-colors ${currentUserReaction === 'love' ? 'text-red-500 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-red-500'}`}>
-                                            <FontAwesomeIcon icon={faHeart} /><span>Love {loveCount > 0 && `(${loveCount})`}</span>
-                                        </button>
-                                        <button onClick={() => handleReaction(post.id, 'haha')} className={`reaction-btn text-sm flex items-center space-x-2 transition-colors ${currentUserReaction === 'haha' ? 'text-yellow-500 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-yellow-500'}`}>
-                                            <FontAwesomeIcon icon={faLaughSquint} /><span>Haha {hahaCount > 0 && `(${hahaCount})`}</span>
-                                        </button>
-                                    </div>
-                                )}
-                                {!isEditing && <CommentSection postId={post.id} />}
-                            </div>
-                        );
-                    })}
-                    {posts.length === 0 && !loading && (
+                            );
+                        })
+                    )}
+                    {!loading && posts.length === 0 && (
                         <p className="text-center text-slate-500 dark:text-slate-400">The wall is empty. Be the first to post!</p>
                     )}
                 </div>

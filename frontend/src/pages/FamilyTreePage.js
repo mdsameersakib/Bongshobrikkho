@@ -1,9 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, Suspense, lazy } from 'react';
 import usePersons from '../hooks/usePersons';
 import useFamilyList from '../hooks/useFamilyList';
 import useCouples from '../hooks/useCouples';
 import { calculateTreeLayout } from '../hooks/useTreeLayout';
-import TreeCanvas from '../components/TreeCanvas';
+import { LoadingSpinner } from '../components/Skeletons';
+
+// Lazy load the heavy TreeCanvas component
+const TreeCanvas = lazy(() => import('../components/TreeCanvas'));
 
 export default function FamilyTreePage() {
   // 1. Fetch all necessary data first. The hook provides loading state.
@@ -74,7 +77,9 @@ export default function FamilyTreePage() {
         </p>
       </header>
       <div className="flex-grow w-full">
-        <TreeCanvas layout={layout} />
+        <Suspense fallback={<LoadingSpinner />}>
+          <TreeCanvas layout={layout} />
+        </Suspense>
       </div>
     </div>
   );

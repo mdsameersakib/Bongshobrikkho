@@ -4,7 +4,7 @@ import { auth, db } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import usePersons from '../hooks/usePersons';
-import { doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { updateUserProfile } from '../services/profileService';
 import useCloudinaryUpload from '../hooks/useCloudinaryUpload'; // 1. IMPORT THE HOOK
 
@@ -24,7 +24,6 @@ function SettingsPage() {
 
     // Preference load state
     const [prefStatus, setPrefStatus] = useState('');
-    const loadingPrefsRef = useRef(true);
     const debounceTimer = useRef(null);
 
     // Load profile fields when person data available - Added profileImageUrl
@@ -39,34 +38,9 @@ function SettingsPage() {
         }
     }, [userPerson]);
 
-    // Load stored preferences (theme + accent) from users doc.preferences (one-time per mount)
-    useEffect(() => {
-        (async () => {
-            if (!user) return;
-            try {
-                const userRef = doc(db, 'users', user.uid);
-                const snap = await getDoc(userRef);
-                if (snap.exists()) {
-                    const data = snap.data();
-                        if (data.preferences) {
-                            const { themeMode, accent: savedAccent } = data.preferences;
-                            if (themeMode && ['light','dark','system'].includes(themeMode)) setMode(themeMode);
-                            if (savedAccent && accents.includes(savedAccent)) setAccent(savedAccent);
-                        }
-                }
-            } catch (e) {
-                console.warn('Failed loading preferences', e);
-            } finally {
-                loadingPrefsRef.current = false;
-            }
-        })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
-
-    // Persist preferences (debounced) when mode or accent changes after initial load
+    // Persist preferences (debounced) when mode or accent changes
     useEffect(() => {
         if (!user) return;
-        if (loadingPrefsRef.current) return;
         if (debounceTimer.current) clearTimeout(debounceTimer.current);
         debounceTimer.current = setTimeout(async () => {
             try {
