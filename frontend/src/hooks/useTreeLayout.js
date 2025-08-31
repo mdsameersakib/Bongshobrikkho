@@ -1,9 +1,99 @@
 // NOTE: Node dimensions are updated to match the new PersonNode design.
 const NODE_WIDTH = 220;
 const NODE_HEIGHT = 90; // align with PersonNode height for precise geometry
-const H_SPACING = 48; // horizontal gap between units
-const V_SPACING = 150; // vertical gap between generations
+const H_SPACING = 40; // horizontal gap between units (reduced from 60)
+const V_SPACING = 120; // vertical gap between generations (reduced from 180)
 const COUPLE_SPACING = 80; // gap between spouses in a couple unit
+
+// Helper function to calculate spacing between clusters based on family relationships
+const calculateClusterSpacing = (clusterA, clusterB, allUnits, allPersons, userId) => {
+  // Check if clusters have related family members
+  const aConnections = getFamilyConnections(clusterA.units[0], allUnits, allPersons);
+  const bConnections = getFamilyConnections(clusterB.units[0], allUnits, allPersons);
+
+  // If clusters share family connections, reduce spacing
+  const sharedConnections = new Set([...aConnections].filter(x => bConnections.has(x)));
+  if (sharedConnections.size > 0) {
+    return H_SPACING * 0.5; // Less spacing for related clusters
+  }
+
+  // If one cluster is much closer to user than the other, add more spacing
+  const aAvgDepth = clusterA.units.reduce((sum, u) => sum + (u.depth || 0), 0) / clusterA.units.length;
+  const bAvgDepth = clusterB.units.reduce((sum, u) => sum + (u.depth || 0), 0) / clusterB.units.length;
+  const userDepth = allUnits.find(u => u.memberIds.includes(userId))?.depth || 0;
+
+  const aDistance = Math.abs(aAvgDepth - userDepth);
+  const bDistance = Math.abs(bAvgDepth - userDepth);
+
+  if (Math.abs(aDistance - bDistance) > 1) {
+    return H_SPACING * 1.5; // More spacing between distant generations
+  }
+
+  return H_SPACING; // Normal spacing
+};
+// Helper function to get family connections for a unit
+const getFamilyConnections = (unit, allUnits, allPersons) => {
+  const connections = new Set();
+
+  // Add direct parent connections
+  unit.parentUnitIds.forEach(parentId => {
+    const parent = allUnits.find(u => u.id === parentId);
+    if (parent) {
+      parent.memberIds.forEach(memberId => connections.add(memberId));
+    }
+  });
+
+  // Add direct child connections
+  unit.childUnitIds.forEach(childId => {
+    const child = allUnits.find(u => u.id === childId);
+    if (child) {
+      child.memberIds.forEach(memberId => connections.add(memberId));
+    }
+  });
+
+  // Add sibling connections (units with same parents)
+  allUnits.forEach(otherUnit => {
+    if (otherUnit.id !== unit.id &&
+        otherUnit.parentUnitIds.size === unit.parentUnitIds.size &&
+        [...otherUnit.parentUnitIds].every(id => unit.parentUnitIds.has(id))) {
+      otherUnit.memberIds.forEach(memberId => connections.add(memberId));
+    }
+  });
+
+  return connections;
+};
+
+// Helper function to calculate connection score to user
+const calculateConnectionScore = (connections, userId, allPersons) => {
+  let score = 0;
+
+  // Direct connection to user
+  if (connections.has(userId)) {
+    score += 100;
+  }
+
+  // Connection through user's parents
+  const userPerson = allPersons.find(p => p.id === userId);
+  const userParents = userPerson?.parents || [];
+  userParents.forEach(parentId => {
+    if (connections.has(parentId)) {
+      score += 50;
+    }
+  });
+
+  // Connection through user's children
+  const userChildren = allPersons.filter(p => p.parents?.includes(userId)).map(p => p.id);
+  userChildren.forEach(childId => {
+    if (connections.has(childId)) {
+      score += 30;
+    }
+  });
+
+  // General family connections
+  score += connections.size * 2;
+
+  return score;
+};
 
 export const calculateTreeLayout = (allPersons, userPerson, couples = []) => {
   if (!userPerson || !allPersons?.length) return empty();
@@ -54,14 +144,27 @@ export const calculateTreeLayout = (allPersons, userPerson, couples = []) => {
   depths.forEach((depth) => {
     const levelUnits = connected.filter(u => u.depth === depth);
 
-    // Build clusters: siblings (same parent set) stay together
+    // Build clusters: siblings (same parent set) stay together, but separate different family branches
     const clusterMap = new Map();
     for (const u of levelUnits) {
       const parentIds = [...u.parentUnitIds];
-      const key = parentIds.length ? parentIds.sort().join('|') : `__solo_${u.id}`;
+      let key;
+
+      if (parentIds.length === 0) {
+        // Root level units (like grandparents) - cluster by their own relationships
+        key = `__root_${u.id}`;
+      } else if (parentIds.length === 1) {
+        // Single parent - use that parent's ID
+        key = parentIds[0];
+      } else {
+        // Multiple parents (shouldn't happen in family trees, but handle it)
+        key = parentIds.sort().join('|');
+      }
+
       if (!clusterMap.has(key)) clusterMap.set(key, []);
       clusterMap.get(key).push(u);
     }
+
     const clusters = [];
     clusterMap.forEach((unitsArr, key) => {
       // Anchor for cluster: average of parent centers if parents exist; else undefined
@@ -78,19 +181,74 @@ export const calculateTreeLayout = (allPersons, userPerson, couples = []) => {
       clusters.push({ key, units: unitsArr, anchor });
     });
 
-    // Sort clusters by anchor (parents position) then fallback id
+    // Sort clusters by family relationships and position
     clusters.sort((a,b) => {
-      if (a.anchor != null && b.anchor != null) return a.anchor - b.anchor;
+      // First: clusters with anchors (positioned relative to parents)
+      if (a.anchor != null && b.anchor != null) {
+        return a.anchor - b.anchor;
+      }
       if (a.anchor != null) return -1;
       if (b.anchor != null) return 1;
+
+      // Second: sort by family relationship strength
+      const aConnections = getFamilyConnections(a.units[0], connected, allPersons);
+      const bConnections = getFamilyConnections(b.units[0], connected, allPersons);
+      const aScore = calculateConnectionScore(aConnections, userPerson.id, allPersons);
+      const bScore = calculateConnectionScore(bConnections, userPerson.id, allPersons);
+
+      if (aScore !== bScore) {
+        return bScore - aScore;
+      }
+
+      // Third: sort by depth (closer generations first)
+      const aAvgDepth = a.units.reduce((sum, u) => sum + (u.depth || 0), 0) / a.units.length;
+      const bAvgDepth = b.units.reduce((sum, u) => sum + (u.depth || 0), 0) / b.units.length;
+
+      if (aAvgDepth !== bAvgDepth) {
+        return Math.abs(aAvgDepth - userUnit.depth) - Math.abs(bAvgDepth - userUnit.depth);
+      }
+
+      // Finally: sort by key for consistency
       return a.key.localeCompare(b.key);
     });
 
-    // Within each cluster, sort units by id to keep deterministic order
-    clusters.forEach(cl => cl.units.sort((a,b)=>a.id.localeCompare(b.id)));
+    // Within each cluster, sort units by relationship type and family connections
+    clusters.forEach(cl => {
+      cl.units.sort((a,b) => {
+        // First priority: couples before singles
+        if (a.type !== b.type) {
+          if (a.type === 'couple') return -1;
+          if (b.type === 'couple') return 1;
+        }
+
+        // Second priority: sort by family relationships
+        // Check if units share common ancestors or descendants
+        const aConnections = getFamilyConnections(a, connected, allPersons);
+        const bConnections = getFamilyConnections(b, connected, allPersons);
+
+        // Prefer units that are more connected to the main family line
+        const aScore = calculateConnectionScore(aConnections, userPerson.id, allPersons);
+        const bScore = calculateConnectionScore(bConnections, userPerson.id, allPersons);
+
+        if (aScore !== bScore) {
+          return bScore - aScore; // Higher score first
+        }
+
+        // Third priority: sort by position relative to user
+        const aDepth = Math.abs(a.depth - userUnit.depth);
+        const bDepth = Math.abs(b.depth - userUnit.depth);
+
+        if (aDepth !== bDepth) {
+          return aDepth - bDepth; // Closer to user first
+        }
+
+        // Finally: sort by id for consistency
+        return a.id.localeCompare(b.id);
+      });
+    });
 
     let cursorX = 0;
-    clusters.forEach(cl => {
+    clusters.forEach((cl, clusterIndex) => {
       const widths = cl.units.map(u => unitWidth(u));
       const clusterWidth = widths.reduce((a,c)=>a+c,0) + H_SPACING * (cl.units.length - 1);
       let startX;
@@ -99,15 +257,21 @@ export const calculateTreeLayout = (allPersons, userPerson, couples = []) => {
       } else {
         startX = cursorX;
       }
-      // Prevent overlap with previous cluster
-      if (startX < cursorX) startX = cursorX;
+
+      // Prevent overlap with previous cluster and add smart spacing
+      const prevCluster = clusterIndex > 0 ? clusters[clusterIndex - 1] : null;
+      const extraSpacing = prevCluster ? calculateClusterSpacing(cl, prevCluster, connected, allPersons, userPerson.id) : 0;
+
+      if (startX < cursorX + extraSpacing) startX = cursorX + extraSpacing;
+
       // Place units
       let xPos = startX;
       cl.units.forEach((u,i) => {
         positions.set(u.id, { x: xPos, y: depth * (NODE_HEIGHT + V_SPACING) });
         xPos += widths[i] + H_SPACING;
       });
-      cursorX = startX + clusterWidth + H_SPACING;
+
+      cursorX = startX + clusterWidth + H_SPACING + extraSpacing;
     });
   });
 
@@ -162,7 +326,7 @@ export const calculateTreeLayout = (allPersons, userPerson, couples = []) => {
     }
   }
 
-  // --- Step 6: Build edges ---
+  // --- Step 6: Build edges with improved curved routing ---
   const edges = [];
 
   // Precompute couple children from docs (for real couples); fallback to member children
@@ -236,7 +400,7 @@ export const calculateTreeLayout = (allPersons, userPerson, couples = []) => {
   const shiftY = -minY + padY;
   nodes.forEach((n) => { n.x += shiftX; n.y += shiftY; });
   edges.forEach((e) => {
-    if (e.type === 'marriage') { e.x1 += shiftX; e.x2 += shiftX; e.y1 += shiftY; e.y2 += shiftY; } 
+    if (e.type === 'marriage') { e.x1 += shiftX; e.x2 += shiftX; e.y1 += shiftY; e.y2 += shiftY; }
     else if (e.path) {
       e.path = e.path.replace(/([MVH])\s+(-?\d+(?:\.\d+)?)(?:\s+(-?\d+(?:\.\d+)?))?/g, (match, cmd, a, b) => {
           if (cmd === 'M') return `M ${parseFloat(a) + shiftX} ${parseFloat(b) + shiftY}`;

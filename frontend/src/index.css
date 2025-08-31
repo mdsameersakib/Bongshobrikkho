@@ -83,11 +83,19 @@ body { @apply text-black dark:text-white; }
     transition: transform 0.3s ease-out;
 }
 
-.edge-path { stroke: #64748b; stroke-width: 2; fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
+.edge-path { stroke: #64748b; stroke-width: 2; fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; opacity: 0.8; }
 .dark .edge-path { stroke: rgb(var(--accent) / 0.55); }
 
-.edge-path.marriage { stroke: #475569; stroke-width: 2.5; }
+.edge-path.marriage { stroke: #475569; stroke-width: 2.5; opacity: 0.9; }
 .dark .edge-path.marriage { stroke: rgb(var(--accent) / 0.8); }
+
+/* Add hover effects for edges */
+.edge-path:hover { stroke-width: 3; opacity: 1; }
+
+/* Add subtle animation for edges */
+.edge-path {
+  transition: stroke-width 0.2s ease, opacity 0.2s ease;
+}
 
 /* Sidebar accent tint */
 .sidebar-accent {
