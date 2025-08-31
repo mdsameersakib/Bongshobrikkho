@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { signOut } from "firebase/auth";
 import { auth } from './services/firebase';
@@ -7,15 +7,17 @@ import { useAuth } from './context/AuthContext'; // <-- Import the useAuth hook
 // Core Components
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import { LoadingPage } from './components/Skeletons';
+import PerformanceMonitor from './components/PerformanceMonitor';
 
-// Pages
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import FamilyListPage from './pages/FamilyListPage';
-import FamilyTreePage from './pages/FamilyTreePage';
-import FamilyWallPage from './pages/FamilyWallPage';
-import EventsPage from './pages/EventsPage';
-import SettingsPage from './pages/SettingsPage';
+// Lazy load pages for code splitting
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const FamilyListPage = lazy(() => import('./pages/FamilyListPage'));
+const FamilyTreePage = lazy(() => import('./pages/FamilyTreePage'));
+const FamilyWallPage = lazy(() => import('./pages/FamilyWallPage'));
+const EventsPage = lazy(() => import('./pages/EventsPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 function App() {
   // Get user and loading state from our new context
@@ -26,25 +28,28 @@ function App() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-screen"><h1 className="text-2xl font-bold">Loading...</h1></div>;
+    return <LoadingPage message="Initializing app..." />;
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route element={<ProtectedRoute user={user} />}>
-        <Route path="/" element={<Layout handleLogout={handleLogout} />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="family-list" element={<FamilyListPage />} />
-          <Route path="family-tree" element={<FamilyTreePage />} />
-          <Route path="family-wall" element={<FamilyWallPage />} />
-          <Route path="events" element={<EventsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+    <Suspense fallback={<LoadingPage message="Loading page..." />}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<ProtectedRoute user={user} />}>
+          <Route path="/" element={<Layout handleLogout={handleLogout} />}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="family-list" element={<FamilyListPage />} />
+            <Route path="family-tree" element={<FamilyTreePage />} />
+            <Route path="family-wall" element={<FamilyWallPage />} />
+            <Route path="events" element={<EventsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
         </Route>
-      </Route>
-      <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
+      </Routes>
+      <PerformanceMonitor />
+    </Suspense>
   );
 }
 
