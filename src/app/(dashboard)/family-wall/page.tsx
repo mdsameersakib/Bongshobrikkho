@@ -20,7 +20,7 @@ export default function FamilyWallPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-10">
+    <div className="max-w-5xl mx-auto space-y-10">
       <header className="text-center">
         <h1 className="text-4xl font-black text-forest dark:text-sage tracking-tight">Family Wall</h1>
         <p className="text-slate-500 dark:text-slate-400 mt-2">Share updates and memories with your loved ones.</p>

@@ -29,7 +29,7 @@ export default function SettingsPage() {
   if (!mounted) return null
 
   return (
-    <div className="max-w-4xl mx-auto space-y-10">
+    <div className="max-w-6xl mx-auto space-y-10">
       <header>
         <h1 className="text-4xl font-black text-forest dark:text-sage tracking-tight">Settings</h1>
         <p className="text-slate-500 dark:text-slate-400 mt-2">Personalize your experience and manage your account.</p>
