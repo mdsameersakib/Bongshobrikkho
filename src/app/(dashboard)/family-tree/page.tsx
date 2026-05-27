@@ -13,7 +13,7 @@ export default async function FamilyTreePage() {
     .single()
 
   return (
-    <div className="h-[calc(100vh-140px)] w-full rounded-2xl border border-sand/30 dark:border-sand/10 overflow-hidden shadow-xl bg-white/50 dark:bg-background/50 backdrop-blur-sm">
+    <div className="h-full w-full rounded-2xl border border-sand/30 dark:border-sand/10 overflow-hidden shadow-xl bg-white/50 dark:bg-surface-alt backdrop-blur-sm">
       <TreeCanvas userPersonId={profile?.person_id || null} />
     </div>
   )

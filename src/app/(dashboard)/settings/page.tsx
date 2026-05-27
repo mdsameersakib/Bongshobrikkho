@@ -26,6 +26,19 @@ export default function SettingsPage() {
     router.refresh()
   }
 
+  const toggleTheme = (t: 'light' | 'dark' | 'system') => {
+    // If View Transitions API is not supported, switch immediately
+    if (!document.startViewTransition) {
+      setTheme(t)
+      return
+    }
+
+    // Start a view transition for a smooth cross-fade
+    document.startViewTransition(() => {
+      setTheme(t)
+    })
+  }
+
   if (!mounted) return null
 
   return (
@@ -75,16 +88,16 @@ export default function SettingsPage() {
                 <p className="font-black text-slate-800 dark:text-white">Theme Selection</p>
                 <p className="text-xs text-slate-500 font-bold mt-1">Choose between light, dark, or system preferences.</p>
               </div>
-              <div className="flex bg-background dark:bg-background rounded-2xl p-1.5 border border-sand/20 shadow-inner">
+              <div className="flex bg-sand/10 dark:bg-background rounded-2xl p-1.5 border border-sand/30 dark:border-sand/10 shadow-inner relative">
                 {(['light', 'dark', 'system'] as const).map((t) => (
                   <button
                     key={t}
-                    onClick={() => setTheme(t)}
+                    onClick={() => toggleTheme(t)}
                     className={cn(
-                      "px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all capitalize",
+                      "px-8 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 capitalize relative z-10",
                       theme === t
-                        ? "bg-forest text-cream shadow-xl"
-                        : "text-slate-500 hover:text-forest dark:hover:text-sage"
+                        ? "bg-white dark:bg-surface text-forest dark:text-sage shadow-[0_4px_12px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] border border-sand/20 dark:border-sand/10 scale-[1.02]"
+                        : "text-slate-400 hover:text-forest dark:hover:text-sage opacity-60 hover:opacity-100"
                     )}
                   >
                     {t}

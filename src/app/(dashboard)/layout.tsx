@@ -22,8 +22,8 @@ export default async function DashboardLayout({
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <MobileSidebar />
         
-        <main className="flex-1 overflow-y-auto p-4 md:p-10">
-          <div className="max-w-[1600px] mx-auto h-full">
+        <main className="flex-1 overflow-y-auto p-2 md:p-4">
+          <div className="max-w-[2000px] mx-auto h-full">
             {children}
           </div>
         </main>
