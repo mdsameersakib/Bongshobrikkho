@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 
-export default function useTreeControls(containerRef: React.RefObject<HTMLDivElement>, userNodeId: string | null) {
+export default function useTreeControls(containerRef: React.RefObject<HTMLDivElement | null>, userNodeId: string | null) {
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 0.6 });
   const isPanning = useRef(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
