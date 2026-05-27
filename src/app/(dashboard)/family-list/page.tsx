@@ -1,16 +1,15 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
 import { usePersons, useCouples, useLineage, useProfileSearch } from '@/hooks/useFamilyData'
 import { useFamilyMutations } from '@/hooks/useFamilyMutations'
 import { getRelationshipToUser } from '@/utils/relationships'
 import { formatDateDMY } from '@/utils/date'
 import { Person, Profile } from '@/types/database'
-import { Search, UserPlus, Heart, Users, Edit2, Trash2, Mail } from 'lucide-react'
+import { Search, UserPlus, Edit2, Trash2, Mail } from 'lucide-react'
 import AddMemberModal from '@/components/AddMemberModal'
 import EditMemberModal from '@/components/EditMemberModal'
 import { RelationshipFormData, PersonFormData } from '@/types/forms'
-import { cn } from '@/lib/utils'
 
 export default function FamilyListPage() {
   const { data: persons = [] } = usePersons()

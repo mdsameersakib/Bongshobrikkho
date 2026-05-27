@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { X, Camera, Loader2 } from 'lucide-react'
@@ -112,7 +113,13 @@ export default function EditMemberModal({ person, onSave, onClose }: EditMemberM
                 <div className="relative group cursor-pointer">
                   <div className="h-24 w-24 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden">
                     {profileImageUrl ? (
-                      <img src={profileImageUrl} alt="Preview" className="h-full w-full object-cover" />
+                      <Image 
+                        src={profileImageUrl} 
+                        alt="Preview" 
+                        width={96}
+                        height={96}
+                        className="h-full w-full object-cover" 
+                      />
                     ) : (
                       <span className="text-3xl font-bold text-slate-300 dark:text-slate-600">
                         {firstName?.[0]?.toUpperCase() || '?'}

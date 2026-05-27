@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 import { useEvents } from '@/hooks/useEventData'
 import { Plus, Calendar, MapPin, Info, Gift, Heart, Music, type LucideIcon } from 'lucide-react'
 import { formatDateDMY } from '@/utils/date'

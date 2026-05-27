@@ -1,10 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
+import Image from 'next/image'
 import { usePosts, useWallMutations } from '@/hooks/useWallData'
-import { usePersons } from '@/hooks/useFamilyData'
-import { ThumbsUp, Heart, Laugh, Camera, Send, MoreHorizontal, MessageSquare } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { ThumbsUp, Heart, Camera, Send, MoreHorizontal, MessageSquare } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 export default function FamilyWallPage() {
@@ -83,7 +82,14 @@ export default function FamilyWallPage() {
                   {post.content}
                 </p>
                 {post.image_url && (
-                  <img src={post.image_url} alt="Post" className="mt-4 rounded-lg w-full object-cover max-h-96" />
+                  <div className="relative mt-4 w-full h-96">
+                    <Image 
+                      src={post.image_url} 
+                      alt="Post" 
+                      fill
+                      className="rounded-lg object-cover" 
+                    />
+                  </div>
                 )}
               </div>
 

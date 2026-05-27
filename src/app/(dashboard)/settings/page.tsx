@@ -4,7 +4,6 @@ import React, { useState } from 'react'
 import { createClient } from '@/lib/supabase-client'
 import { useRouter } from 'next/navigation'
 import { LogOut, User, Shield, Palette } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 export default function SettingsPage() {
   const supabase = createClient()

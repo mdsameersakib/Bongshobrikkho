@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase-client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { cn } from '@/lib/utils'
 import { Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
@@ -38,7 +37,7 @@ export default function LoginPage() {
         router.refresh()
       }
     } else {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {

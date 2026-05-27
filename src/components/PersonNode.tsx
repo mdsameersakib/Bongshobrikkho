@@ -1,6 +1,7 @@
 import React from 'react';
 import { formatDateDMY } from '@/utils/date';
 import { Person } from '@/types/database';
+import Image from 'next/image';
 
 interface PersonNodeProps {
   person: Person & { profileImageUrl?: string };
@@ -32,7 +33,13 @@ export default function PersonNode({ person, relationship, style }: PersonNodePr
         {/* Avatar */}
         <div className="flex-shrink-0 h-16 w-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center border-2 border-inherit overflow-hidden">
           {person.profileImageUrl ? (
-            <img src={person.profileImageUrl} alt="Profile" className="h-full w-full object-cover rounded-full" />
+            <Image 
+              src={person.profileImageUrl} 
+              alt="Profile" 
+              width={64}
+              height={64}
+              className="h-full w-full object-cover rounded-full" 
+            />
           ) : (
             <span className="text-3xl font-thin text-black/70 dark:text-white/70">{avatarLetter}</span>
           )}
