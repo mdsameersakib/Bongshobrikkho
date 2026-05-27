@@ -3,92 +3,122 @@
 import React from 'react'
 import { useDashboardStats } from '@/hooks/useDashboardData'
 import { usePersons } from '@/hooks/useFamilyData'
-import { Users, Calendar, UserPlus, MessageSquare, ChevronRight, type LucideIcon } from 'lucide-react'
+import { Users, Calendar, UserPlus, MessageSquare, ChevronRight, Network, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import { formatDateDMY } from '@/utils/date'
+import { cn } from '@/lib/utils'
 
-const StatCard = ({ title, value, icon: Icon, color }: { title: string, value: number, icon: LucideIcon, color: string }) => {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300',
-    green: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-300',
-    orange: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-300',
-    purple: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300',
+const StatCard = ({ title, value, icon: Icon, color }: { title: string, value: number, icon: LucideIcon, color: 'forest' | 'sage' | 'sand' | 'cream' }) => {
+  const colors = {
+    forest: 'bg-forest/10 text-forest dark:bg-forest/20 dark:text-forest',
+    sage: 'bg-sage/10 text-sage dark:bg-sage/20 dark:text-sage',
+    sand: 'bg-sand/20 text-slate-700 dark:bg-sand/30 dark:text-sand',
+    cream: 'bg-background text-forest border border-sand/30',
   }
 
   return (
-    <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
-        <p className="text-3xl font-bold mt-1">{value}</p>
+    <div className="bg-surface p-6 rounded-2xl border border-sand/20 dark:border-sand/10 shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-between group">
+      <div className="flex items-center gap-4">
+        <div className={cn("p-3 rounded-xl transition-colors duration-300 group-hover:scale-110", colors[color])}>
+          <Icon size={24} />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{title}</p>
+          <h3 className="text-3xl font-black text-forest dark:text-sage">{value}</h3>
+        </div>
       </div>
-      <div className={cn("h-12 w-12 rounded-full flex items-center justify-center", colors[color])}>
-        <Icon size={24} />
-      </div>
+      <ChevronRight className="text-slate-300 group-hover:text-forest dark:group-hover:text-sage transition-colors" size={20} />
     </div>
   )
 }
 
-import { cn } from '@/lib/utils'
-
 export default function DashboardPage() {
   const { data: stats } = useDashboardStats()
   const { data: persons = [] } = usePersons()
+  
+  const latestMembers = [...persons]
+    .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+    .slice(0, 5)
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <header>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-slate-500 dark:text-slate-400">Welcome to your family overview.</p>
+        <h1 className="text-4xl font-black text-forest dark:text-sage tracking-tight">Family Dashboard</h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg">Your family's growth and activity at a glance.</p>
       </header>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Family Members" value={stats?.persons || 0} icon={Users} color="green" />
-        <StatCard title="Upcoming Events" value={stats?.upcomingEvents || 0} icon={Calendar} color="blue" />
-        <StatCard title="Pending Requests" value={stats?.pendingConnections || 0} icon={UserPlus} color="orange" />
-        <StatCard title="Wall Posts" value={stats?.posts || 0} icon={MessageSquare} color="purple" />
+        <StatCard title="Total Members" value={stats?.persons || 0} icon={Users} color="forest" />
+        <StatCard title="Upcoming Events" value={stats?.upcomingEvents || 0} icon={Calendar} color="sage" />
+        <StatCard title="New Requests" value={stats?.pendingConnections || 0} icon={UserPlus} color="sand" />
+        <StatCard title="Wall Posts" value={stats?.posts || 0} icon={MessageSquare} color="forest" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Members */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold">Family Members Preview</h3>
-            <Link href="/family-list" className="text-sm font-bold text-blue-600 hover:underline">View All</Link>
+        {/* Recent Activity */}
+        <div className="lg:col-span-2 bg-surface rounded-2xl border border-sand/20 dark:border-sand/10 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-sand/10 dark:border-sand/5 flex justify-between items-center">
+            <h2 className="text-xl font-black text-forest dark:text-sage">Recent Additions</h2>
+            <Link href="/family-list" className="text-sm font-bold text-sage hover:text-forest transition-colors flex items-center gap-1">
+              View All <ChevronRight size={14} />
+            </Link>
           </div>
-          
-          <div className="space-y-4">
-            {persons.slice(0, 5).map(person => (
-              <div key={person.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-500 font-bold">
-                    {person.first_name[0]}
+          <div className="divide-y divide-sand/10 dark:divide-sand/5">
+            {latestMembers.length > 0 ? (
+              latestMembers.map((member) => (
+                <div key={member.id} className="p-4 flex items-center justify-between hover:bg-background/30 dark:hover:bg-background/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-full bg-forest text-cream flex items-center justify-center font-bold text-lg shadow-inner">
+                      {member.first_name[0]}
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-800 dark:text-slate-100">{member.first_name} {member.last_name}</p>
+                      <p className="text-xs text-slate-500">Added on {formatDateDMY(member.created_at)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold">{person.first_name} {person.last_name}</p>
-                    <p className="text-xs text-slate-500">Born: {formatDateDMY(person.birth_date)}</p>
-                  </div>
+                  <span className={cn(
+                    "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm",
+                    member.gender === 'male' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-pink-50 text-pink-600 border border-pink-100'
+                  )}>
+                    {member.gender}
+                  </span>
                 </div>
-                <ChevronRight size={16} className="text-slate-400" />
+              ))
+            ) : (
+              <div className="p-10 text-center">
+                <p className="text-slate-500">No members added yet.</p>
+                <Link href="/family-tree" className="mt-4 inline-block bg-forest text-cream px-6 py-2 rounded-xl font-bold shadow-md hover:scale-105 transition-transform">
+                  Start Building Your Tree
+                </Link>
               </div>
-            ))}
-            {persons.length === 0 && (
-              <p className="text-center py-8 text-slate-500 text-sm italic">No family members found yet.</p>
             )}
           </div>
         </div>
 
-        {/* Recent Activity / Next Event Placeholder */}
+        {/* Quick Tips/Stats */}
         <div className="space-y-6">
-          <div className="bg-blue-600 rounded-xl p-6 text-white shadow-lg shadow-blue-500/20">
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Calendar size={20} /> Next Event
-            </h3>
-            <div className="bg-white/10 rounded-lg p-4 border border-white/20">
-              <p className="text-sm font-medium opacity-80 uppercase tracking-wider">Coming Soon</p>
-              <p className="text-lg font-bold mt-1">Birthday Celebration</p>
-              <p className="text-sm mt-1 opacity-90">Stay tuned for updates.</p>
+          <div className="bg-forest text-cream p-8 rounded-2xl shadow-xl relative overflow-hidden group">
+            <div className="absolute -right-4 -top-4 opacity-10 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12">
+              <Network size={120} />
             </div>
+            <h3 className="text-2xl font-black mb-2 relative z-10">Pro Tip</h3>
+            <p className="text-cream/80 text-sm leading-relaxed relative z-10">
+              Add placeholder profiles for deceased relatives to complete your lineage and preserve family history for future generations.
+            </p>
+            <button className="mt-6 bg-background text-forest px-4 py-2 rounded-xl text-xs font-black shadow-lg hover:bg-sage hover:text-cream transition-colors relative z-10">
+              LEARN MORE
+            </button>
+          </div>
+
+          <div className="bg-sand/10 dark:bg-surface p-6 rounded-2xl border-2 border-dashed border-sand/40 dark:border-sand/10 flex flex-col items-center text-center">
+            <div className="h-16 w-16 bg-sand/20 rounded-full flex items-center justify-center text-forest mb-4">
+              <UserPlus size={32} />
+            </div>
+            <h4 className="font-black text-forest dark:text-sage uppercase tracking-wider text-sm">Expand Your Reach</h4>
+            <p className="text-xs text-slate-500 mt-2">Invite siblings or cousins to collaborate on your family tree.</p>
+            <button className="mt-4 w-full py-2 border-2 border-forest dark:border-sage text-forest dark:text-sage font-black rounded-xl hover:bg-forest dark:hover:bg-sage hover:text-cream transition-all text-xs">
+              SEND INVITE
+            </button>
           </div>
         </div>
       </div>

@@ -10,9 +10,10 @@ import { usePersons, useCouples, useLineage } from '@/hooks/useFamilyData'
 import { useFamilyMutations } from '@/hooks/useFamilyMutations'
 import { Person } from '@/types/database'
 import { RelationshipFormData, PersonFormData } from '@/types/forms'
+import { Users, Network } from 'lucide-react'
 
 const MarriageIcon = ({ x, y }: { x: number; y: number }) => (
-  <svg x={x - 8} y={y - 8} width="16" height="16" viewBox="0 0 24 24" fill="#475569" className="pointer-events-none">
+  <svg x={x - 10} y={y - 10} width="20" height="20" viewBox="0 0 24 24" fill="#546B41" className="pointer-events-none drop-shadow-sm">
     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
   </svg>
 )
@@ -41,7 +42,6 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
 
   const handleNodeClick = (person: Person) => {
     setSelectedPerson(person)
-    // For now, let's open edit modal on click, or we could have a menu
     setModalType('edit')
   }
 
@@ -53,7 +53,7 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full overflow-hidden bg-slate-50 dark:bg-slate-950 select-none"
+      className="relative w-full h-full overflow-hidden bg-background/50 dark:bg-surface-alt select-none"
       style={{ cursor: 'grab' }}
       {...eventHandlers}
     >
@@ -76,8 +76,8 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
                     <line
                       x1={edge.x1} y1={edge.y1}
                       x2={edge.x2} y2={edge.y2}
-                      className="stroke-slate-400 dark:stroke-slate-600 stroke-2"
-                      strokeDasharray="4"
+                      className="stroke-forest/30 dark:stroke-sage/30 stroke-2"
+                      strokeDasharray="4 4"
                     />
                     <MarriageIcon x={(edge.x1 + edge.x2) / 2} y={(edge.y1 + edge.y2) / 2} />
                 </g>
@@ -87,14 +87,14 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
               <path 
                 key={edge.id} 
                 d={edge.path} 
-                className="fill-none stroke-slate-300 dark:stroke-slate-700 stroke-2 transition-all" 
+                className="fill-none stroke-sand/60 dark:stroke-slate-800 stroke-2 transition-all" 
               />
             )
           })}
         </svg>
 
         {layout.nodes.map((node) => (
-          <div key={node.id} onClick={(e) => { e.stopPropagation(); handleNodeClick(node.person); }}>
+          <div key={node.id} onClick={(e) => { e.stopPropagation(); handleNodeClick(node.person); }} className="relative">
             <PersonNode
               person={node.person}
               relationship={node.relationship}
@@ -102,11 +102,12 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
             />
             {/* Quick Add Button */}
             <button 
-              className="absolute z-20 bg-blue-600 text-white rounded-full h-6 w-6 flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-              style={{ left: node.x + 200, top: node.y + 70 }}
+              className="absolute z-20 bg-forest text-cream rounded-full h-8 w-8 flex items-center justify-center shadow-xl hover:scale-110 hover:bg-sage transition-all border-2 border-cream group"
+              style={{ left: node.x + 220, top: node.y + 80 }}
               onClick={(e) => { e.stopPropagation(); handleAddMember(node.person); }}
+              title="Add Relative"
             >
-              +
+              <span className="text-xl font-black group-hover:rotate-90 transition-transform">+</span>
             </button>
           </div>
         ))}
@@ -136,36 +137,39 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
       )}
 
       {/* UI Controls */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-1 rounded-lg shadow-lg border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
+      <div className="absolute top-6 right-6 z-10 flex flex-col gap-4">
+        <div className="bg-white/80 dark:bg-background/80 backdrop-blur-xl p-1.5 rounded-2xl shadow-2xl border border-sand/30 dark:border-sand/10 flex flex-col gap-1.5">
           <button
             onClick={() => zoom('in')}
-            className="h-10 w-10 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors"
+            className="h-12 w-12 flex items-center justify-center rounded-xl hover:bg-forest hover:text-cream text-forest dark:text-sage transition-all font-black text-2xl shadow-sm"
             title="Zoom In"
           >
-            <span className="text-xl font-bold">+</span>
+            +
           </button>
+          <div className="h-px bg-sand/20 mx-2" />
           <button
             onClick={() => zoom('out')}
-            className="h-10 w-10 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors"
+            className="h-12 w-12 flex items-center justify-center rounded-xl hover:bg-forest hover:text-cream text-forest dark:text-sage transition-all font-black text-2xl shadow-sm"
             title="Zoom Out"
           >
-            <span className="text-xl font-bold">−</span>
+            −
           </button>
         </div>
         
         <button
           onClick={centerOnNode}
-          className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-lg shadow-lg border border-slate-200 dark:border-slate-800 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="bg-forest text-cream backdrop-blur-md px-6 py-3 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest hover:bg-sage hover:scale-105 transition-all active:scale-95"
         >
-          Center on Me
+          Center View
         </button>
       </div>
 
       {/* Info Overlay */}
-      <div className="absolute bottom-4 left-4 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-lg shadow-lg border border-slate-200 dark:border-slate-800">
-        <div className="text-sm font-medium text-slate-700 dark:text-slate-200">
-          {layout.nodes.length} Members • {layout.edges.length} Connections
+      <div className="absolute bottom-6 left-6 z-10 bg-white/80 dark:bg-background/80 backdrop-blur-xl px-6 py-3 rounded-2xl shadow-2xl border border-sand/30 dark:border-sand/10">
+        <div className="text-xs font-black uppercase tracking-widest text-forest dark:text-sage flex items-center gap-3">
+          <span className="flex items-center gap-1.5"><Users size={14} /> {layout.nodes.length} Members</span>
+          <div className="w-1 h-1 rounded-full bg-sand" />
+          <span className="flex items-center gap-1.5"><Network size={14} /> {layout.edges.length} Connections</span>
         </div>
       </div>
     </div>

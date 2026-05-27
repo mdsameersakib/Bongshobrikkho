@@ -12,50 +12,52 @@ interface PersonNodeProps {
 export default function PersonNode({ person, relationship, style }: PersonNodeProps) {
   const genderColor =
     person.gender === 'male'
-      ? 'border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+      ? 'border-forest/40 bg-forest/5 dark:border-forest/60 dark:bg-forest/20'
       : person.gender === 'female'
-      ? 'border-pink-400 dark:border-pink-500 bg-pink-50 dark:bg-pink-900/20'
-      : 'border-slate-400 dark:border-slate-500 bg-slate-50 dark:bg-slate-800/40';
+      ? 'border-sage/40 bg-sage/5 dark:border-sage/60 dark:bg-sage/20'
+      : 'border-sand/40 bg-sand/5 dark:border-sand/60 dark:bg-sand/20';
 
   const avatarLetter = person.first_name?.[0]?.toUpperCase() || '?';
 
   return (
     <div
       id={person.id}
-      className="absolute bg-white dark:bg-slate-900 rounded-xl shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 border border-slate-200 dark:border-slate-700/80"
+      className="absolute bg-surface rounded-2xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-sand/20 dark:border-sand/10 group"
       style={{
-        width: 220,
-        height: 90,
+        width: 240,
+        height: 100,
         transform: `translate(${style.x}px, ${style.y}px)`,
       }}
     >
-      <div className={`h-full w-full p-3 flex items-center border-2 ${genderColor} rounded-xl backdrop-blur-sm`}>
+      <div className={`h-full w-full p-4 flex items-center border-2 ${genderColor} rounded-2xl backdrop-blur-sm`}>
         {/* Avatar */}
-        <div className="flex-shrink-0 h-16 w-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center border-2 border-inherit overflow-hidden">
+        <div className="flex-shrink-0 h-14 w-14 bg-white dark:bg-sand/10 rounded-full flex items-center justify-center border-2 border-inherit overflow-hidden shadow-inner group-hover:rotate-6 transition-transform">
           {person.profileImageUrl ? (
             <Image 
               src={person.profileImageUrl} 
               alt="Profile" 
-              width={64}
-              height={64}
+              width={56}
+              height={56}
               className="h-full w-full object-cover rounded-full" 
             />
           ) : (
-            <span className="text-3xl font-thin text-black/70 dark:text-white/70">{avatarLetter}</span>
+            <span className="text-2xl font-black text-forest dark:text-sage">{avatarLetter}</span>
           )}
         </div>
 
         {/* Details */}
         <div className="ml-4 overflow-hidden">
-          <p className="font-bold text-black dark:text-white text-lg truncate" title={`${person.first_name} ${person.last_name || ''}`}>
+          <p className="font-black text-forest dark:text-sage text-base truncate leading-tight" title={`${person.first_name} ${person.last_name || ''}`}>
             {person.first_name} {person.last_name || ''}
           </p>
           {relationship && (
-            <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-0.5">
               {relationship}
             </p>
           )}
-          <p className="text-xs text-black/70 dark:text-white/60 mt-1">Born: {person.birth_date ? formatDateDMY(person.birth_date) : 'N/A'}</p>
+          <p className="text-[11px] font-bold text-slate-400 dark:text-white/40 mt-1">
+            {person.birth_date ? formatDateDMY(person.birth_date) : 'N/A'}
+          </p>
         </div>
       </div>
     </div>

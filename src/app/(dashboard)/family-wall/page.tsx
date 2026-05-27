@@ -3,8 +3,9 @@
 import React, { useState } from 'react'
 import Image from 'next/image'
 import { usePosts, useWallMutations } from '@/hooks/useWallData'
-import { ThumbsUp, Heart, Camera, Send, MoreHorizontal, MessageSquare } from 'lucide-react'
+import { ThumbsUp, Heart, Camera, Send, MoreHorizontal, MessageSquare, Newspaper } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { cn } from '@/lib/utils'
 
 export default function FamilyWallPage() {
   const { data: posts = [], isLoading } = usePosts()
@@ -19,95 +20,124 @@ export default function FamilyWallPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <header>
-        <h1 className="text-3xl font-bold">Family Wall</h1>
-        <p className="text-slate-500 dark:text-slate-400">Share updates and memories with the family.</p>
+    <div className="max-w-2xl mx-auto space-y-10">
+      <header className="text-center">
+        <h1 className="text-4xl font-black text-forest dark:text-sage tracking-tight">Family Wall</h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-2">Share updates and memories with your loved ones.</p>
       </header>
 
       {/* Create Post */}
-      <div className="bg-white dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-        <textarea 
-          placeholder="What's on your mind?"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="w-full bg-transparent border-none focus:ring-0 resize-none text-sm min-h-[80px]"
-        />
-        <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-900">
-          <button className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors text-sm font-medium">
-            <Camera size={18} />
+      <div className="bg-surface p-6 rounded-3xl border border-sand/20 dark:border-sand/10 shadow-xl space-y-4 focus-within:ring-4 focus-within:ring-forest/5 transition-all">
+        <div className="flex gap-4">
+          <div className="h-10 w-10 rounded-2xl bg-forest text-cream flex items-center justify-center font-black flex-shrink-0">
+            U
+          </div>
+          <textarea 
+            placeholder="What's happening in your branch of the tree?"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="w-full bg-transparent border-none focus:ring-0 resize-none text-base min-h-[100px] text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
+          />
+        </div>
+        <div className="flex justify-between items-center pt-4 border-t border-sand/10 dark:border-sand/5">
+          <button className="flex items-center gap-2 text-forest dark:text-sage hover:bg-forest/5 dark:hover:bg-sage/10 px-4 py-2 rounded-xl transition-all text-sm font-black uppercase tracking-widest">
+            <Camera size={20} />
             Add Photo
           </button>
           <button 
             onClick={handlePost}
             disabled={isPosting || !content.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+            className="bg-forest hover:bg-forest/90 disabled:opacity-50 text-cream px-8 py-2.5 rounded-xl text-sm font-black shadow-xl shadow-forest/20 transition-all flex items-center gap-2 active:scale-95"
           >
-            <Send size={16} />
-            Post
+            <Send size={18} />
+            POST
           </button>
         </div>
       </div>
 
       {/* Feed */}
-      <div className="space-y-6">
+      <div className="space-y-8">
         {isLoading ? (
-          <div className="text-center py-8 text-slate-500">Loading your wall...</div>
+          <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <div className="h-12 w-12 border-4 border-sand/30 border-t-forest rounded-full animate-spin" />
+            <p className="text-forest font-black uppercase tracking-widest text-xs">Growing your wall...</p>
+          </div>
         ) : posts.length === 0 ? (
-          <div className="text-center py-12 bg-white dark:bg-slate-950 rounded-xl border border-dashed border-slate-300 dark:border-slate-800">
-            <p className="text-slate-500">The wall is empty. Be the first to share something!</p>
+          <div className="text-center py-20 bg-white/50 dark:bg-background/50 rounded-3xl border-4 border-dashed border-sand/20 dark:border-sand/10">
+            <div className="h-20 w-20 bg-sand/10 rounded-full flex items-center justify-center mx-auto mb-6 text-sand">
+              <Newspaper size={40} />
+            </div>
+            <p className="text-forest dark:text-sage font-black text-xl">The wall is empty.</p>
+            <p className="text-slate-500 mt-2">Be the first to share a family memory!</p>
           </div>
         ) : (
           posts.map(post => (
-            <div key={post.id} className="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div key={post.id} className="bg-surface rounded-3xl border border-sand/20 dark:border-sand/10 shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Post Header */}
-              <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold">
+              <div className="p-6 flex items-center justify-between border-b border-sand/5 dark:border-sand/5">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-sage/20 text-forest flex items-center justify-center font-black text-lg border-2 border-sage/10">
                     {post.author?.email?.[0].toUpperCase() || 'U'}
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold">{post.author?.display_name || post.author?.email}</h4>
-                    <p className="text-[10px] text-slate-500">{formatDistanceToNow(new Date(post.created_at))} ago</p>
+                    <h4 className="text-base font-black text-forest dark:text-sage leading-none">
+                      {post.author?.display_name || post.author?.email?.split('@')[0]}
+                    </h4>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1.5">
+                      {formatDistanceToNow(new Date(post.created_at))} ago
+                    </p>
                   </div>
                 </div>
-                <button className="text-slate-400 hover:text-slate-600 transition-colors">
-                  <MoreHorizontal size={18} />
+                <button className="h-10 w-10 flex items-center justify-center text-slate-300 hover:text-forest transition-colors rounded-xl hover:bg-forest/5">
+                  <MoreHorizontal size={20} />
                 </button>
               </div>
 
               {/* Post Content */}
-              <div className="px-4 pb-4">
-                <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">
+              <div className="px-6 py-6">
+                <p className="text-base text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">
                   {post.content}
                 </p>
                 {post.image_url && (
-                  <div className="relative mt-4 w-full h-96">
+                  <div className="relative mt-6 w-full h-[400px] rounded-2xl overflow-hidden shadow-2xl">
                     <Image 
                       src={post.image_url} 
                       alt="Post" 
                       fill
-                      className="rounded-lg object-cover" 
+                      className="object-cover" 
                     />
                   </div>
                 )}
               </div>
 
               {/* Post Actions */}
-              <div className="px-4 py-3 bg-slate-50/50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between">
-                <div className="flex items-center gap-6">
+              <div className="px-6 py-4 bg-background/30 dark:bg-background/30 border-t border-sand/10 dark:border-sand/5 flex items-center justify-between">
+                <div className="flex items-center gap-2 sm:gap-6">
                   <button 
                     onClick={() => addReaction({ post_id: post.id, type: 'like' })}
-                    className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors text-xs font-bold"
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-xs font-black uppercase tracking-widest",
+                      post.reactions?.some(r => r.reaction_type === 'like') 
+                        ? "bg-forest text-cream shadow-lg" 
+                        : "text-slate-500 hover:bg-forest/5 hover:text-forest"
+                    )}
                   >
                     <ThumbsUp size={16} />
-                    <span>Like {post.reactions?.filter(r => r.reaction_type === 'like').length || 0}</span>
+                    <span>{post.reactions?.filter(r => r.reaction_type === 'like').length || 0}</span>
                   </button>
-                  <button className="flex items-center gap-2 text-slate-500 hover:text-red-600 transition-colors text-xs font-bold">
+                  <button 
+                    onClick={() => addReaction({ post_id: post.id, type: 'love' })}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-xs font-black uppercase tracking-widest",
+                      post.reactions?.some(r => r.reaction_type === 'love') 
+                        ? "bg-red-500 text-white shadow-lg" 
+                        : "text-slate-500 hover:bg-red-50 hover:text-red-500"
+                    )}
+                  >
                     <Heart size={16} />
-                    <span>Love {post.reactions?.filter(r => r.reaction_type === 'love').length || 0}</span>
+                    <span>{post.reactions?.filter(r => r.reaction_type === 'love').length || 0}</span>
                   </button>
-                  <button className="flex items-center gap-2 text-slate-500 hover:text-blue-500 transition-colors text-xs font-bold">
+                  <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-500 hover:bg-forest/5 hover:text-forest transition-all text-xs font-black uppercase tracking-widest">
                     <MessageSquare size={16} />
                     <span>Comment</span>
                   </button>

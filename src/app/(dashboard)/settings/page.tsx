@@ -3,14 +3,14 @@
 import React, { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase-client'
 import { useRouter } from 'next/navigation'
-import { LogOut, User, Shield, Palette } from 'lucide-react'
+import { LogOut, User, Shield, Palette, ChevronRight } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
 
 export default function SettingsPage() {
   const supabase = createClient()
   const router = useRouter()
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -29,56 +29,62 @@ export default function SettingsPage() {
   if (!mounted) return null
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-10">
       <header>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Settings</h1>
-        <p className="text-slate-500 dark:text-slate-400">Manage your profile and account preferences.</p>
+        <h1 className="text-4xl font-black text-forest dark:text-sage tracking-tight">Settings</h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-2">Personalize your experience and manage your account.</p>
       </header>
 
-      <div className="grid gap-6">
+      <div className="grid gap-8">
         {/* Profile Section */}
-        <section className="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 dark:border-slate-900 flex items-center gap-3">
-            <User className="text-blue-600" size={20} />
-            <h2 className="font-bold text-slate-900 dark:text-white">Profile Details</h2>
+        <section className="bg-surface rounded-3xl border border-sand/20 dark:border-sand/10 shadow-xl overflow-hidden">
+          <div className="p-6 border-b border-sand/10 dark:border-sand/5 flex items-center gap-4">
+            <div className="h-10 w-10 rounded-xl bg-forest/10 text-forest flex items-center justify-center">
+              <User size={20} />
+            </div>
+            <h2 className="text-xl font-black text-forest dark:text-sage">Profile Details</h2>
           </div>
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">Display Name</label>
-                <input className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Your name" />
+          <div className="p-8 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Display Name</label>
+                <input className="w-full bg-background/30 dark:bg-background border border-sand/30 dark:border-sand/10 rounded-2xl p-4 text-sm font-bold text-slate-800 dark:text-white outline-none focus:ring-4 focus:ring-forest/5 transition-all" placeholder="Your full name" />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">Email Address</label>
-                <input className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-sm text-slate-400 dark:text-slate-500" disabled value="user@example.com" />
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                <input className="w-full bg-background dark:bg-surface-alt border border-sand/30 dark:border-sand/10 rounded-2xl p-4 text-sm font-bold text-slate-400 dark:text-slate-600 cursor-not-allowed" disabled value="user@family.com" />
               </div>
             </div>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors">Save Changes</button>
+            <button className="bg-forest hover:bg-forest/90 text-cream px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-forest/20 transition-all active:scale-95">
+              SAVE CHANGES
+            </button>
           </div>
         </section>
 
         {/* Preferences Section */}
-        <section className="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 dark:border-slate-900 flex items-center gap-3">
-            <Palette className="text-purple-600" size={20} />
-            <h2 className="font-bold text-slate-900 dark:text-white">Appearance</h2>
+        <section className="bg-surface rounded-3xl border border-sand/20 dark:border-sand/10 shadow-xl overflow-hidden">
+          <div className="p-6 border-b border-sand/10 dark:border-sand/5 flex items-center gap-4">
+            <div className="h-10 w-10 rounded-xl bg-sage/20 text-forest flex items-center justify-center">
+              <Palette size={20} />
+            </div>
+            <h2 className="text-xl font-black text-forest dark:text-sage">Appearance</h2>
           </div>
-          <div className="p-6">
-            <div className="flex items-center justify-between">
+          <div className="p-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
               <div>
-                <p className="font-medium text-slate-900 dark:text-white">Theme Mode</p>
-                <p className="text-xs text-slate-500">Switch between light, dark, and system themes.</p>
+                <p className="font-black text-slate-800 dark:text-white">Theme Selection</p>
+                <p className="text-xs text-slate-500 font-bold mt-1">Choose between light, dark, or system preferences.</p>
               </div>
-              <div className="flex bg-slate-100 dark:bg-slate-900 rounded-lg p-1">
+              <div className="flex bg-background dark:bg-background rounded-2xl p-1.5 border border-sand/20 shadow-inner">
                 {(['light', 'dark', 'system'] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setTheme(t)}
                     className={cn(
-                      "px-4 py-1.5 text-xs font-bold rounded-md transition-all capitalize",
+                      "px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all capitalize",
                       theme === t
-                        ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm"
-                        : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                        ? "bg-forest text-cream shadow-xl"
+                        : "text-slate-500 hover:text-forest dark:hover:text-sage"
                     )}
                   >
                     {t}
@@ -90,19 +96,24 @@ export default function SettingsPage() {
         </section>
 
         {/* Danger Zone */}
-        <section className="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 dark:border-slate-900 flex items-center gap-3">
-            <Shield className="text-red-600" size={20} />
-            <h2 className="font-bold text-slate-900 dark:text-white">Account Security</h2>
+        <section className="bg-surface rounded-3xl border border-sand/20 dark:border-sand/10 shadow-xl overflow-hidden">
+          <div className="p-6 border-b border-sand/10 dark:border-sand/5 flex items-center gap-4">
+            <div className="h-10 w-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center">
+              <Shield size={20} />
+            </div>
+            <h2 className="text-xl font-black text-red-600">Account Security</h2>
           </div>
-          <div className="p-6">
+          <div className="p-8">
             <button 
               onClick={handleLogout}
               disabled={loading}
-              className="flex items-center gap-2 text-red-600 hover:text-red-700 font-bold transition-colors disabled:opacity-50"
+              className="group flex items-center gap-3 text-red-500 hover:text-red-700 font-black text-sm uppercase tracking-widest transition-all disabled:opacity-50"
             >
-              <LogOut size={20} />
+              <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <LogOut size={20} />
+              </div>
               {loading ? 'Signing out...' : 'Sign Out of Bongshobrikkho'}
+              <ChevronRight size={16} className="ml-2 group-hover:translate-x-2 transition-transform" />
             </button>
           </div>
         </section>

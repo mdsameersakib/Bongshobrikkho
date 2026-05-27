@@ -43,9 +43,9 @@ export default function EditMemberModal({ person, onSave, onClose }: EditMemberM
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+      <div className="bg-surface rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-sand/10 animate-in fade-in zoom-in duration-200">
         <div className="p-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-sand/10">
             <div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white">Edit Profile</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -71,7 +71,7 @@ export default function EditMemberModal({ person, onSave, onClose }: EditMemberM
                     {...register('first_name')}
                     placeholder="First Name" 
                     className={cn(
-                      "w-full bg-slate-50 dark:bg-slate-800 border rounded-lg p-2.5 text-sm outline-none transition-all",
+                      "w-full bg-background dark:bg-sand/10 border rounded-lg p-2.5 text-sm outline-none transition-all",
                       errors.first_name ? "border-red-500" : "border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500"
                     )}
                   />
@@ -82,7 +82,7 @@ export default function EditMemberModal({ person, onSave, onClose }: EditMemberM
                   <input 
                     {...register('last_name')}
                     placeholder="Last Name" 
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="w-full bg-background dark:bg-sand/10 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   />
                 </div>
                 
@@ -90,7 +90,7 @@ export default function EditMemberModal({ person, onSave, onClose }: EditMemberM
                   <label className="text-xs font-medium text-slate-500">Gender</label>
                   <select 
                     {...register('gender')}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="w-full bg-background dark:bg-sand/10 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   >
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -103,7 +103,7 @@ export default function EditMemberModal({ person, onSave, onClose }: EditMemberM
                   <input 
                     type="date"
                     {...register('birth_date')}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="w-full bg-background dark:bg-sand/10 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   />
                 </div>
               </div>
@@ -111,7 +111,7 @@ export default function EditMemberModal({ person, onSave, onClose }: EditMemberM
               {/* Profile Image Placeholder */}
               <div className="flex flex-col items-center pt-2">
                 <div className="relative group cursor-pointer">
-                  <div className="h-24 w-24 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden">
+                  <div className="h-24 w-24 rounded-full bg-slate-100 dark:bg-sand/10 border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden">
                     {profileImageUrl ? (
                       <Image 
                         src={profileImageUrl} 
@@ -133,7 +133,7 @@ export default function EditMemberModal({ person, onSave, onClose }: EditMemberM
               </div>
             </div>
 
-            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-sand/10">
               <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Life Status</p>
               <div className="flex items-center gap-2">
                 <input 
@@ -151,13 +151,13 @@ export default function EditMemberModal({ person, onSave, onClose }: EditMemberM
                   <input 
                     type="date"
                     {...register('death_date')}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="w-full bg-background dark:bg-sand/10 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   />
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 dark:border-sand/10">
               <button 
                 type="button" 
                 onClick={onClose}

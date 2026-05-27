@@ -1,10 +1,10 @@
 import { Person, Couple, Lineage } from '@/types/database';
 
-const NODE_WIDTH = 220;
-const NODE_HEIGHT = 90;
-const H_SPACING = 40;
-const V_SPACING = 120;
-const COUPLE_SPACING = 80;
+const NODE_WIDTH = 240;
+const NODE_HEIGHT = 100;
+const H_SPACING = 50;
+const V_SPACING = 140;
+const COUPLE_SPACING = 100;
 
 export interface TreeNode {
   id: string;

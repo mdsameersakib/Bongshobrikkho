@@ -3,18 +3,36 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #FFF8EC; /* Cream */
+  --foreground: #2D3625; /* Deep Forest/Olive */
+  --surface: #FFFFFF;
+  --surface-alt: #F9F3E5; /* Slightly darker cream for nested items */
+  --brand-forest: #546B41;
+  --brand-sage: #99AD7A;
+  --brand-sand: #DCCCAC;
+  --brand-cream: #FFF8EC;
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #1B1512; /* Trunk Dark Brown - Deepest */
+  --foreground: #FFF8EC;
+  --surface: #261E1A;    /* Bark Brown - Cards */
+  --surface-alt: #332822; /* Light Bark - Inputs/Inner items */
+  --brand-forest: #99AD7A;
+  --brand-sage: #546B41;
+  --brand-sand: #3D3129;
+  --brand-cream: #1B1512;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-forest: var(--brand-forest);
+  --color-sage: var(--brand-sage);
+  --color-sand: var(--brand-sand);
+  --color-cream: var(--brand-cream);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
