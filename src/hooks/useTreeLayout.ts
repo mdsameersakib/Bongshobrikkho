@@ -42,41 +42,41 @@ export const calculateTreeLayout = (
 
   const personMap = new Map(allPersons.map((p) => [p.id, p]));
   
-  // 1. Assign Depths
+// 1. Assign Depths and Islands (Family Clusters)
   const depths = new Map<string, number>();
+  const islands = new Map<string, number>();
   const visited = new Set<string>();
-  const queue: { id: string; depth: number }[] = [{ id: userPerson.id, depth: 0 }];
+  
+  // queue stores: { id, depth, island }
+  const queue: { id: string; depth: number; island: number }[] = [{ id: userPerson.id, depth: 0, island: 0 }];
   visited.add(userPerson.id);
 
   while (queue.length > 0) {
-    const { id, depth } = queue.shift()!;
+    const { id, depth, island } = queue.shift()!;
     depths.set(id, depth);
+    islands.set(id, island);
 
-    // Neighbors: Parents (up)
+    // Blood relatives (Parents and Children) share the exact same Island
     const parents = parentChild
       .filter(pc => pc.child_id === id && personMap.has(pc.parent_id))
       .map(pc => pc.parent_id);
 
-    parents.forEach(pId => {
-      if (!visited.has(pId)) {
-        visited.add(pId);
-        queue.push({ id: pId, depth: depth - 1 });
-      }
-    });
-
-    // Neighbors: Children (down)
     const children = parentChild
       .filter(pc => pc.parent_id === id && personMap.has(pc.child_id))
       .map(pc => pc.child_id);
 
-    children.forEach(cId => {
-      if (!visited.has(cId)) {
-        visited.add(cId);
-        queue.push({ id: cId, depth: depth + 1 });
+    const bloodRelatives = [...parents, ...children];
+    
+    bloodRelatives.forEach(relId => {
+      if (!visited.has(relId)) {
+        visited.add(relId);
+        // Parents go up a level (-1), children go down a level (+1)
+        const isParent = parents.includes(relId);
+        queue.push({ id: relId, depth: depth + (isParent ? -1 : 1), island });
       }
     });
 
-    // Neighbors: Spouses (same level)
+    // Spouses get a different Island number so they cluster completely separately
     const spouses = marriages
       .filter(m => (m.person1_id === id || m.person2_id === id))
       .map(m => m.person1_id === id ? m.person2_id : m.person1_id)
@@ -85,13 +85,13 @@ export const calculateTreeLayout = (
     spouses.forEach(sId => {
       if (!visited.has(sId)) {
         visited.add(sId);
-        queue.push({ id: sId, depth: depth });
+        queue.push({ id: sId, depth, island: island + 1 });
       }
     });
   }
 
-  // 2. Horizontal Ordering
-  const orderedIdsByDepth = new Map<number, string[]>();
+// 2. Horizontal Grouping
+  const groupsByDepth = new Map<number, string[][]>();
   const allDepths = Array.from(new Set(depths.values())).sort((a, b) => a - b);
 
   allDepths.forEach(depth => {
@@ -99,46 +99,98 @@ export const calculateTreeLayout = (
       .filter(([, d]) => d === depth)
       .map(([id]) => id);
     
-    const sortedLevelIds: string[] = [];
+    const groups: string[][] = [];
     const levelVisited = new Set<string>();
 
     levelIds.forEach(id => {
       if (levelVisited.has(id)) return;
+      
       const spouses = marriages
         .filter(m => m.person1_id === id || m.person2_id === id)
         .map(m => m.person1_id === id ? m.person2_id : m.person1_id)
         .filter(sId => depths.get(sId) === depth);
 
       if (spouses.length > 0) {
-        if (spouses.length >= 2) {
-          sortedLevelIds.push(spouses[0], id, ...spouses.slice(1));
-          spouses.forEach(sId => levelVisited.add(sId));
+        let spouseGroup: string[] = [];
+        
+        if (spouses.length === 1) {
+          spouseGroup = [id, spouses[0]];
+          // Keep user on the right of their spouse
+          if (spouseGroup[0] === userPerson.id) spouseGroup.reverse();
+        } else if (spouses.length === 2) {
+          // Force shared spouses into the middle
+          spouseGroup = [spouses[0], id, spouses[1]];
         } else {
-          sortedLevelIds.push(id, spouses[0]);
-          levelVisited.add(spouses[0]);
+          spouseGroup = [id, ...spouses];
         }
+
+        groups.push(spouseGroup);
+        spouseGroup.forEach(gId => levelVisited.add(gId));
       } else {
-        sortedLevelIds.push(id);
+        groups.push([id]);
+        levelVisited.add(id);
       }
-      levelVisited.add(id);
     });
-    orderedIdsByDepth.set(depth, sortedLevelIds);
+
+    groupsByDepth.set(depth, groups);
   });
 
-  // 3. Position Calculation
+  // 3. Position Calculation (Smart Target Sorting with Islands)
   const nodePositions = new Map<string, { x: number; y: number }>();
   let minX = 0, maxX = 0, minY = 0, maxY = 0;
 
-  allDepths.forEach(depth => {
-    const ids = orderedIdsByDepth.get(depth) || [];
+  const sortedDepths = [...allDepths].sort((a, b) => b - a);
+
+  sortedDepths.forEach(depth => {
+    const groups = groupsByDepth.get(depth) || [];
     const y = depth * (NODE_HEIGHT + V_SPACING);
-    ids.forEach((id, index) => {
-      const x = index * (NODE_WIDTH + H_SPACING);
-      nodePositions.set(id, { x, y });
-      maxX = Math.max(maxX, x + NODE_WIDTH);
-      maxY = Math.max(maxY, y + NODE_HEIGHT);
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
+
+    const groupTargets = groups.map(group => {
+      // Find the lowest island number in this group
+      const island = Math.min(...group.map(id => islands.get(id) || 0));
+      
+      const childrenPos = parentChild
+        .filter(pc => group.includes(pc.parent_id))
+        .map(pc => nodePositions.get(pc.child_id))
+        .filter(pos => pos !== undefined);
+
+      let targetX = 0;
+      if (childrenPos.length > 0) {
+        targetX = childrenPos.reduce((sum, pos) => sum + pos!.x, 0) / childrenPos.length;
+      }
+      
+      return { group, targetX, hasChildren: childrenPos.length > 0, island };
+    });
+
+    // Sort groups: Islands first, then Target X
+    groupTargets.sort((a, b) => {
+      // Primary Sort: In-laws (higher island numbers) get pushed to the far left
+      if (a.island !== b.island) return b.island - a.island; 
+      
+      // Secondary Sort: Align parents perfectly above their children
+      if (a.hasChildren && b.hasChildren) return a.targetX - b.targetX;
+      if (a.hasChildren) return -1;
+      if (b.hasChildren) return 1;
+      return 0;
+    });
+
+    let currentX = 0;
+
+    groupTargets.forEach(({ group, targetX }) => {
+      const groupWidth = (group.length * NODE_WIDTH) + ((group.length - 1) * H_SPACING);
+      const groupStartX = Math.max(currentX, targetX - (groupWidth / 2));
+
+      group.forEach((id, index) => {
+        const x = groupStartX + index * (NODE_WIDTH + H_SPACING);
+        nodePositions.set(id, { x, y });
+        
+        maxX = Math.max(maxX, x + NODE_WIDTH);
+        maxY = Math.max(maxY, y + NODE_HEIGHT);
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+      });
+
+      currentX = groupStartX + groupWidth + H_SPACING;
     });
   });
 

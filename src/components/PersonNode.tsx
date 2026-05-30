@@ -31,7 +31,7 @@ export default function PersonNode({ person, relationship, style }: PersonNodePr
   return (
     <div
       id={person.id}
-      className="absolute bg-surface rounded-2xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-sand/20 dark:border-sand/10 group"
+      className="absolute bg-surface rounded-2xl shadow-lg transition-all duration-300 border border-sand/20 dark:border-sand/10 group hover:ring-4 hover:ring-forest/10 dark:hover:ring-sage/20 hover:border-forest/40 dark:hover:border-sage/40"
       style={{
         width: 240,
         height: 100,
