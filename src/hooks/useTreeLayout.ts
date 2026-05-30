@@ -135,46 +135,68 @@ export const calculateTreeLayout = (
     groupsByDepth.set(depth, groups);
   });
 
-  // 3. Position Calculation (Smart Target Sorting with Islands)
+// 3. Position Calculation (Top-Down First Pass)
   const nodePositions = new Map<string, { x: number; y: number }>();
   let minX = 0, maxX = 0, minY = 0, maxY = 0;
 
-  const sortedDepths = [...allDepths].sort((a, b) => b - a);
+  const sortedDepths = [...allDepths].sort((a, b) => a - b);
 
   sortedDepths.forEach(depth => {
     const groups = groupsByDepth.get(depth) || [];
     const y = depth * (NODE_HEIGHT + V_SPACING);
 
     const groupTargets = groups.map(group => {
-      // Find the lowest island number in this group
       const island = Math.min(...group.map(id => islands.get(id) || 0));
       
-      const childrenPos = parentChild
-        .filter(pc => group.includes(pc.parent_id))
-        .map(pc => nodePositions.get(pc.child_id))
+      const parentPos = parentChild
+        .filter(pc => group.includes(pc.child_id))
+        .map(pc => nodePositions.get(pc.parent_id))
         .filter(pos => pos !== undefined);
 
       let targetX = 0;
-      if (childrenPos.length > 0) {
-        targetX = childrenPos.reduce((sum, pos) => sum + pos!.x, 0) / childrenPos.length;
+      if (parentPos.length > 0) {
+        targetX = parentPos.reduce((sum, pos) => sum + pos!.x, 0) / parentPos.length;
       }
       
-      return { group, targetX, hasChildren: childrenPos.length > 0, island };
+      // NEW: Check if this group has children to identify the active bloodline
+      const hasChildren = parentChild.some(pc => group.includes(pc.parent_id));
+      
+      return { group, targetX, hasParents: parentPos.length > 0, hasChildren, island };
     });
 
-    // Sort groups: Islands first, then Target X
     groupTargets.sort((a, b) => {
-      // Primary Sort: In-laws (higher island numbers) get pushed to the far left
+      // Primary Sort: In-laws to the left, Main family to the right
       if (a.island !== b.island) return b.island - a.island; 
       
-      // Secondary Sort: Align parents perfectly above their children
-      if (a.hasChildren && b.hasChildren) return a.targetX - b.targetX;
-      if (a.hasChildren) return -1;
-      if (b.hasChildren) return 1;
-      return 0;
+      // Secondary Sort: Align perfectly underneath parents
+      if (a.hasParents && b.hasParents) {
+        // If they have different parents, sort by parent location
+        if (a.targetX !== b.targetX) return a.targetX - b.targetX;
+      } else if (a.hasParents && !b.hasParents) {
+        return -1;
+      } else if (!a.hasParents && b.hasParents) {
+        return 1;
+      }
+
+      // Tertiary Sort (Tie-Breaker): Center of Gravity
+      // Push groups with children toward the middle of the canvas
+      const aLineage = a.hasChildren ? 1 : 0;
+      const bLineage = b.hasChildren ? 1 : 0;
+
+      if (aLineage !== bLineage) {
+        if (a.island > 0) {
+          // Left Island (In-laws): Push active lineage to the right (+ return)
+          return aLineage - bLineage;
+        } else {
+          // Right Island (Main): Push active lineage to the left (- return)
+          return bLineage - aLineage;
+        }
+      }
+
+      return 0; // Final fallback
     });
 
-    let currentX = 0;
+    let currentX = Number.NEGATIVE_INFINITY;
 
     groupTargets.forEach(({ group, targetX }) => {
       const groupWidth = (group.length * NODE_WIDTH) + ((group.length - 1) * H_SPACING);
@@ -194,6 +216,64 @@ export const calculateTreeLayout = (
     });
   });
 
+  // 3.5. Bottom-Up Re-centering (Second Pass)
+  // Pull parents to center directly over their children's final positions
+  const bottomUpDepths = [...allDepths].sort((a, b) => b - a);
+
+  bottomUpDepths.forEach(depth => {
+    const groups = groupsByDepth.get(depth) || [];
+    let currentX = Number.NEGATIVE_INFINITY;
+
+    // Sort groups left-to-right based on their current Top-Down positions
+    const orderedGroups = groups.map(group => {
+      const firstNode = nodePositions.get(group[0])!;
+      return { group, currentStartX: firstNode.x };
+    }).sort((a, b) => a.currentStartX - b.currentStartX);
+
+    orderedGroups.forEach(({ group, currentStartX }) => {
+      const groupWidth = (group.length * NODE_WIDTH) + ((group.length - 1) * H_SPACING);
+
+      // Find the children connected to this specific parent group
+      const childrenPos = parentChild
+        .filter(pc => group.includes(pc.parent_id))
+        .map(pc => nodePositions.get(pc.child_id))
+        .filter(pos => pos !== undefined);
+
+      let newStartX = currentStartX;
+
+      // If they have children, calculate the perfect center point above them
+      if (childrenPos.length > 0) {
+        const targetX = childrenPos.reduce((sum, pos) => sum + pos!.x, 0) / childrenPos.length;
+        newStartX = targetX - (groupWidth / 2);
+      }
+
+      // Prevent overlapping if a parent group shifts into another parent group
+      newStartX = Math.max(currentX, newStartX);
+
+      // Apply the new centered X coordinates
+      group.forEach((id, index) => {
+        const x = newStartX + index * (NODE_WIDTH + H_SPACING);
+        const pos = nodePositions.get(id)!;
+        pos.x = x;
+
+        maxX = Math.max(maxX, x + NODE_WIDTH);
+        minX = Math.min(minX, x);
+      });
+
+      currentX = newStartX + groupWidth + H_SPACING;
+    });
+  });
+
+  // 3.8. Normalization Pass (Shift away from negative numbers)
+  const shiftX = minX < 0 ? Math.abs(minX) + 50 : 50; 
+  
+  nodePositions.forEach(pos => {
+    pos.x += shiftX;
+  });
+  
+  maxX += shiftX;
+  minX = 0;
+
   // 4. Build Nodes
   const nodes: TreeNode[] = [];
   nodePositions.forEach((pos, id) => {
@@ -207,7 +287,7 @@ export const calculateTreeLayout = (
     }
   });
 
-  // 5. Build Edges
+  // 5. Build Edges (Lines and Connections)
   const edges: TreeEdge[] = [];
 
   marriages.forEach(m => {
@@ -226,60 +306,58 @@ export const calculateTreeLayout = (
     }
   });
 
-  // Track unique parent connection points to create staggered horizontal lines
-  const depthOffsets = new Map<number, number>();
-  const familyChannels = new Map<string, number>();
+  const rowOffsets = new Map<number, number>();
+  const familyMidY = new Map<string, number>();
 
   parentChild.forEach(pc => {
     const pPos = nodePositions.get(pc.parent_id);
     const cPos = nodePositions.get(pc.child_id);
     
-    if (pPos && cPos) {
-      const marriage = marriages.find(m => 
-        (m.person1_id === pc.parent_id || m.person2_id === pc.parent_id) &&
-        (parentChild.some(pc2 => pc2.child_id === pc.child_id && (pc2.parent_id === m.person1_id || pc2.parent_id === m.person2_id) && pc2.parent_id !== pc.parent_id))
-      );
+    if (!pPos || !cPos) return;
 
-      let startX: number;
-      let startY: number;
+    const marriage = marriages.find(m => 
+      (m.person1_id === pc.parent_id || m.person2_id === pc.parent_id) &&
+      parentChild.some(pc2 => pc2.child_id === pc.child_id && (pc2.parent_id === m.person1_id || pc2.parent_id === m.person2_id) && pc2.parent_id !== pc.parent_id)
+    );
 
+    let startX = pPos.x + NODE_WIDTH / 2;
+    let startY = pPos.y + NODE_HEIGHT;
+    let familyId = `single_${pc.parent_id}`;
+
+    if (marriage) {
+      const sp1 = nodePositions.get(marriage.person1_id)!;
+      const sp2 = nodePositions.get(marriage.person2_id)!;
+      startX = (sp1.x + sp2.x) / 2 + NODE_WIDTH / 2;
+      startY = sp1.y + NODE_HEIGHT / 2;
+      
+      const spouses = [marriage.person1_id, marriage.person2_id].sort();
+      familyId = `marriage_${spouses[0]}_${spouses[1]}`;
+    }
+
+    const endX = cPos.x + NODE_WIDTH / 2;
+    const endY = cPos.y;
+    const baseMidY = (startY + endY) / 2;
+
+    if (!familyMidY.has(familyId)) {
+      const currentOffset = rowOffsets.get(baseMidY) || 0;
+      familyMidY.set(familyId, baseMidY + currentOffset);
+      rowOffsets.set(baseMidY, currentOffset + 30);
+    }
+
+    const midY = familyMidY.get(familyId)!;
+    const edgeId = marriage ? `pc_m_${marriage.id}_${pc.child_id}` : `pc_s_${pc.parent_id}_${pc.child_id}`;
+    
+    if (!edges.some(e => e.id === edgeId)) {
       if (marriage) {
-        const sp1 = nodePositions.get(marriage.person1_id)!;
-        const sp2 = nodePositions.get(marriage.person2_id)!;
-        startX = (sp1.x + sp2.x) / 2 + NODE_WIDTH / 2;
-        startY = sp1.y + NODE_HEIGHT / 2;
-        
         edges.push({
-          id: `junction_${pc.id}`,
+          id: `junction_${edgeId}`,
           type: 'junction-ball',
           x1: startX,
           y1: startY
         });
-      } else {
-        startX = pPos.x + NODE_WIDTH / 2;
-        startY = pPos.y + NODE_HEIGHT;
       }
-
-      const endX = cPos.x + NODE_WIDTH / 2;
-      const endY = cPos.y;
-      
-      // Create a unique channel key based on the parent's starting coordinates
-      const familyKey = `${startX}-${startY}`;
-
-      if (!familyChannels.has(familyKey)) {
-        // Find the current offset for this row, default to 0 if it is empty
-        const currentOffset = depthOffsets.get(startY) || 0;
-        familyChannels.set(familyKey, currentOffset);
-        // Add 25 pixels of vertical space so the next family on this row draws lower
-        depthOffsets.set(startY, currentOffset + 25);
-      }
-
-      // Calculate the standard middle point, then add the specific family's offset
-      const baseMidY = (startY + endY) / 2;
-      const midY = baseMidY + familyChannels.get(familyKey)!;
-      
       edges.push({
-        id: `pc_${pc.id}`,
+        id: edgeId,
         type: 'parent-child',
         path: `M ${startX} ${startY} V ${midY} H ${endX} V ${endY}`
       });

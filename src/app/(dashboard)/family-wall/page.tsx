@@ -64,12 +64,12 @@ export default function FamilyWallPage() {
             <p className="text-forest font-black uppercase tracking-widest text-xs">Growing your wall...</p>
           </div>
         ) : posts.length === 0 ? (
-          <div className="text-center py-20 bg-white/50 dark:bg-background/50 rounded-3xl border-4 border-dashed border-sand/20 dark:border-sand/10">
+          <div className="text-center py-20 bg-white/50 dark:bg-background/50 rounded-3xl border-4 border-dashed border-sand/20 dark:border-sand/10 animate-in fade-in duration-300">
             <div className="h-20 w-20 bg-sand/10 rounded-full flex items-center justify-center mx-auto mb-6 text-sand">
               <Newspaper size={40} />
             </div>
             <p className="text-forest dark:text-sage font-black text-xl">The wall is empty.</p>
-            <p className="text-slate-500 mt-2">Be the first to share a family memory!</p>
+            <p className="text-slate-500 mt-2 font-bold">Be the first to share a family memory!</p>
           </div>
         ) : (
           posts.map(post => (
