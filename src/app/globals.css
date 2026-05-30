@@ -11,6 +11,7 @@
   --brand-sage: #99AD7A;
   --brand-sand: #DCCCAC;
   --brand-cream: #FFF8EC;
+  --tree-line: #3D3129; /* Dark Brown */
 }
 
 .dark {
@@ -22,6 +23,7 @@
   --brand-sage: #546B41;
   --brand-sand: #3D3129;
   --brand-cream: #1B1512;
+  --tree-line: #99AD7A; /* Light Green */
 }
 
 @theme inline {
@@ -33,16 +35,26 @@
   --color-sage: var(--brand-sage);
   --color-sand: var(--brand-sand);
   --color-cream: var(--brand-cream);
+  --color-tree-line: var(--tree-line);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: -0.01em; /* Subtle tracking-tight feel globally */
+  letter-spacing: -0.01em;
   transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Organic Texture Utility - Leaves Only */
+.bg-texture {
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10c10 0 20 10 20 20-10 0-20-10-20-20zM50 50c10 0 20 10 20 20-10 0-20-10-20-20z' fill='%23546B41' fill-opacity='0.12'/%3E%3C/svg%3E");
+}
+
+.dark .bg-texture {
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10c10 0 20 10 20 20-10 0-20-10-20-20zM50 50c10 0 20 10 20 20-10 0-20-10-20-20z' fill='%23FFF8EC' fill-opacity='0.05'/%3E%3C/svg%3E");
 }
 
 /* Ensure all interactive elements transition smoothly */

@@ -44,7 +44,7 @@ export default function DashboardPage() {
     <div className="space-y-10">
       <header>
         <h1 className="text-4xl font-black text-forest dark:text-sage tracking-tight">Family Dashboard</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg">Your family's growth and activity at a glance.</p>
+        <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg">Your family&apos;s growth and activity at a glance.</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

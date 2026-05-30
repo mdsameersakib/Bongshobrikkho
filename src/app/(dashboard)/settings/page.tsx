@@ -6,6 +6,11 @@ import { useRouter } from 'next/navigation'
 import { LogOut, User, Shield, Palette, ChevronRight } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
+import { usePersons, useProfile } from '@/hooks/useFamilyData'
+import { useFamilyMutations } from '@/hooks/useFamilyMutations'
+import { getFullName } from '@/utils/name'
+import EditMemberModal from '@/components/EditMemberModal'
+import { PersonFormData } from '@/types/forms'
 
 export default function SettingsPage() {
   const supabase = createClient()
@@ -13,10 +18,17 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+
+  const { data: profile } = useProfile()
+  const { data: persons = [] } = usePersons()
+  const { updatePerson } = useFamilyMutations()
+
+  const userPerson = persons.find(p => p.id === profile?.person_id)
 
   // Ensure component is mounted to avoid hydration mismatch
   useEffect(() => {
-    setMounted(true)
+    setMounted(true) // eslint-disable-line react-hooks/set-state-in-effect
   }, [])
 
   const handleLogout = async () => {
@@ -60,16 +72,21 @@ export default function SettingsPage() {
           <div className="p-8 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Display Name</label>
-                <input className="w-full bg-background/30 dark:bg-background border border-sand/30 dark:border-sand/10 rounded-2xl p-4 text-sm font-bold text-slate-800 dark:text-white outline-none focus:ring-4 focus:ring-forest/5 transition-all" placeholder="Your full name" />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                <div className="w-full bg-background/30 dark:bg-background border border-sand/30 dark:border-sand/10 rounded-2xl p-4 text-sm font-bold text-slate-800 dark:text-white">
+                  {getFullName(userPerson)}
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
-                <input className="w-full bg-background dark:bg-surface-alt border border-sand/30 dark:border-sand/10 rounded-2xl p-4 text-sm font-bold text-slate-400 dark:text-slate-600 cursor-not-allowed" disabled value="user@family.com" />
+                <input className="w-full bg-background dark:bg-surface-alt border border-sand/30 dark:border-sand/10 rounded-2xl p-4 text-sm font-bold text-slate-400 dark:text-slate-600 cursor-not-allowed" disabled value={profile?.email || '...'} />
               </div>
             </div>
-            <button className="bg-forest hover:bg-forest/90 text-cream px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-forest/20 transition-all active:scale-95">
-              SAVE CHANGES
+            <button 
+              onClick={() => setIsEditingProfile(true)}
+              className="bg-forest hover:bg-forest/90 text-cream px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-forest/20 transition-all active:scale-95"
+            >
+              EDIT PROFILE DETAILS
             </button>
           </div>
         </section>
@@ -131,6 +148,17 @@ export default function SettingsPage() {
           </div>
         </section>
       </div>
+
+      {isEditingProfile && userPerson && (
+        <EditMemberModal 
+          person={userPerson}
+          onClose={() => setIsEditingProfile(false)}
+          onSave={async (data: PersonFormData) => {
+            await updatePerson({ id: userPerson.id, data })
+            setIsEditingProfile(false)
+          }}
+        />
+      )}
     </div>
   )
 }

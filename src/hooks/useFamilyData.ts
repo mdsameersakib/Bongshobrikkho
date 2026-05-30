@@ -10,22 +10,30 @@ export function usePersons() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('persons')
-        .select('*')
+        .select(`
+          *,
+          profiles:profiles!profiles_person_id_fkey(id)
+        `)
       
       if (error) throw error
-      return data as Person[]
+      
+      // Map data to include a simplified joined flag
+      return (data as (Person & { profiles: { id: string }[] })[]).map(p => ({
+        ...p,
+        is_user: p.profiles && p.profiles.length > 0
+      })) as (Person & { is_user: boolean })[]
     },
   })
 }
 
-export function useCouples() {
+export function useMarriages() {
   const supabase = createClient()
 
   return useQuery({
-    queryKey: ['couples'],
+    queryKey: ['marriages'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('couples')
+        .from('marriages')
         .select('*')
       
       if (error) throw error
@@ -34,15 +42,36 @@ export function useCouples() {
   })
 }
 
-export function useLineage() {
+export function useParentChild() {
   const supabase = createClient()
 
   return useQuery({
-    queryKey: ['lineage'],
+    queryKey: ['parent_child'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('lineage')
+        .from('parent_child')
         .select('*')
+      
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+export function useProfile() {
+  const supabase = createClient()
+
+  return useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return null
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
       
       if (error) throw error
       return data

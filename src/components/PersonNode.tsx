@@ -1,6 +1,7 @@
 import React from 'react';
 import { formatDateDMY } from '@/utils/date';
 import { Person } from '@/types/database';
+import { getFullName } from '@/utils/name';
 import Image from 'next/image';
 
 interface PersonNodeProps {
@@ -10,8 +11,16 @@ interface PersonNodeProps {
 }
 
 export default function PersonNode({ person, relationship, style }: PersonNodeProps) {
-  const genderColor =
-    person.gender === 'male'
+  // Safety check: if person is undefined, don't crash the whole tree
+  if (!person) return null;
+
+  const deceasedStyles = person.is_deceased
+    ? 'border-slate-300 bg-slate-50 dark:border-slate-600 dark:bg-slate-900/40 grayscale'
+    : '';
+
+  const genderColor = person.is_deceased 
+    ? deceasedStyles
+    : person.gender === 'male'
       ? 'border-forest/40 bg-forest/5 dark:border-forest/60 dark:bg-forest/20'
       : person.gender === 'female'
       ? 'border-sage/40 bg-sage/5 dark:border-sage/60 dark:bg-sage/20'
@@ -47,8 +56,8 @@ export default function PersonNode({ person, relationship, style }: PersonNodePr
 
         {/* Details */}
         <div className="ml-4 overflow-hidden">
-          <p className="font-black text-forest dark:text-sage text-base truncate leading-tight" title={`${person.first_name} ${person.last_name || ''}`}>
-            {person.first_name} {person.last_name || ''}
+          <p className="font-black text-forest dark:text-sage text-base truncate leading-tight" title={getFullName(person)}>
+            {getFullName(person)}
           </p>
           {relationship && (
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-0.5">

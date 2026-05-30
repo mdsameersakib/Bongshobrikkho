@@ -6,6 +6,7 @@ import { usePosts, useWallMutations } from '@/hooks/useWallData'
 import { ThumbsUp, Heart, Camera, Send, MoreHorizontal, MessageSquare, Newspaper } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { Reaction } from '@/types/database'
 
 export default function FamilyWallPage() {
   const { data: posts = [], isLoading } = usePosts()
@@ -81,10 +82,10 @@ export default function FamilyWallPage() {
                   </div>
                   <div>
                     <h4 className="text-base font-black text-forest dark:text-sage leading-none">
-                      {post.author?.display_name || post.author?.email?.split('@')[0]}
+                      {post.author?.email?.split('@')[0] || 'User'}
                     </h4>
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1.5">
-                      {formatDistanceToNow(new Date(post.created_at))} ago
+                      {post.created_at ? `${formatDistanceToNow(new Date(post.created_at))} ago` : 'Just now'}
                     </p>
                   </div>
                 </div>
@@ -117,25 +118,25 @@ export default function FamilyWallPage() {
                     onClick={() => addReaction({ post_id: post.id, type: 'like' })}
                     className={cn(
                       "flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-xs font-black uppercase tracking-widest",
-                      post.reactions?.some(r => r.reaction_type === 'like') 
+                      post.reactions?.some((r: Reaction) => r.reaction_type === 'like') 
                         ? "bg-forest text-cream shadow-lg" 
                         : "text-slate-500 hover:bg-forest/5 hover:text-forest"
                     )}
                   >
                     <ThumbsUp size={16} />
-                    <span>{post.reactions?.filter(r => r.reaction_type === 'like').length || 0}</span>
+                    <span>{post.reactions?.filter((r: Reaction) => r.reaction_type === 'like').length || 0}</span>
                   </button>
                   <button 
                     onClick={() => addReaction({ post_id: post.id, type: 'love' })}
                     className={cn(
                       "flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-xs font-black uppercase tracking-widest",
-                      post.reactions?.some(r => r.reaction_type === 'love') 
+                      post.reactions?.some((r: Reaction) => r.reaction_type === 'love') 
                         ? "bg-red-500 text-white shadow-lg" 
                         : "text-slate-500 hover:bg-red-50 hover:text-red-500"
                     )}
                   >
                     <Heart size={16} />
-                    <span>{post.reactions?.filter(r => r.reaction_type === 'love').length || 0}</span>
+                    <span>{post.reactions?.filter((r: Reaction) => r.reaction_type === 'love').length || 0}</span>
                   </button>
                   <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-500 hover:bg-forest/5 hover:text-forest transition-all text-xs font-black uppercase tracking-widest">
                     <MessageSquare size={16} />

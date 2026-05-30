@@ -16,15 +16,20 @@ export function useDashboardStats() {
         .select('*', { count: 'exact', head: true })
 
       const { count: connectionsCount } = await supabase
-        .from('connections')
+        .from('network_connections')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending')
+
+      const { count: eventsCount } = await supabase
+        .from('events')
+        .select('*', { count: 'exact', head: true })
+        .gte('event_date', new Date().toISOString().split('T')[0])
 
       return {
         persons: personsCount || 0,
         posts: postsCount || 0,
         pendingConnections: connectionsCount || 0,
-        upcomingEvents: 0, // Placeholder
+        upcomingEvents: eventsCount || 0,
       }
     },
   })

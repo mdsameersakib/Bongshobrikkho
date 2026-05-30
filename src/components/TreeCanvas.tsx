@@ -6,7 +6,7 @@ import AddMemberModal from './AddMemberModal'
 import EditMemberModal from './EditMemberModal'
 import useTreeControls from '@/hooks/useTreeControls'
 import { calculateTreeLayout } from '@/hooks/useTreeLayout'
-import { usePersons, useCouples, useLineage } from '@/hooks/useFamilyData'
+import { usePersons, useMarriages, useParentChild, useProfile } from '@/hooks/useFamilyData'
 import { useFamilyMutations } from '@/hooks/useFamilyMutations'
 import { Person } from '@/types/database'
 import { RelationshipFormData, PersonFormData } from '@/types/forms'
@@ -18,21 +18,29 @@ const MarriageIcon = ({ x, y }: { x: number; y: number }) => (
   </svg>
 )
 
+const JunctionBall = ({ x, y }: { x: number; y: number }) => (
+  <circle cx={x} cy={y} r="5" className="fill-tree-line" />
+)
+
 export default function TreeCanvas({ userPersonId }: { userPersonId: string | null }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
   const [modalType, setModalType] = useState<'add' | 'edit' | null>(null)
   
+  const { data: profile } = useProfile()
   const { data: persons = [] } = usePersons()
-  const { data: couples = [] } = useCouples()
-  const { data: lineages = [] } = useLineage()
+  const { data: marriages = [] } = useMarriages()
+  const { data: parentChild = [] } = useParentChild()
   const { addRelationship, updatePerson } = useFamilyMutations()
 
-  const userPerson = useMemo(() => persons.find(p => p.id === userPersonId) || null, [persons, userPersonId])
+  const userPerson = useMemo(() => 
+    persons.find(p => p.id === profile?.person_id) || null, 
+    [persons, profile?.person_id]
+  )
 
   const layout = useMemo(() => 
-    calculateTreeLayout(persons, userPerson, couples, lineages),
-    [persons, userPerson, couples, lineages]
+    calculateTreeLayout(persons, userPerson, marriages, parentChild),
+    [persons, userPerson, marriages, parentChild]
   )
 
   const { zoom, centerOnNode, transform, eventHandlers } = useTreeControls(
@@ -71,30 +79,34 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
         >
           {layout.edges.map((edge) => {
             if (edge.type === 'marriage' && edge.x1 !== undefined && edge.y1 !== undefined && edge.x2 !== undefined && edge.y2 !== undefined) {
+              const showHeart = edge.status === 'married';
               return (
                 <g key={edge.id}>
                     <line
                       x1={edge.x1} y1={edge.y1}
                       x2={edge.x2} y2={edge.y2}
-                      className="stroke-forest/30 dark:stroke-sage/30 stroke-2"
-                      strokeDasharray="4 4"
+                      className="stroke-tree-line/40 stroke-2"
+                      strokeDasharray={showHeart ? undefined : "4 4"}
                     />
-                    <MarriageIcon x={(edge.x1 + edge.x2) / 2} y={(edge.y1 + edge.y2) / 2} />
+                    {showHeart && <MarriageIcon x={(edge.x1 + edge.x2) / 2} y={(edge.y1 + edge.y2) / 2} />}
                 </g>
               )
+            }
+            if (edge.type === 'junction-ball' && edge.x1 !== undefined && edge.y1 !== undefined) {
+              return <JunctionBall key={edge.id} x={edge.x1} y={edge.y1} />
             }
             return (
               <path 
                 key={edge.id} 
                 d={edge.path} 
-                className="fill-none stroke-sand/60 dark:stroke-slate-800 stroke-2 transition-all" 
+                className="fill-none stroke-tree-line stroke-2 transition-all opacity-60" 
               />
             )
           })}
         </svg>
 
         {layout.nodes.map((node) => (
-          <div key={node.id} onClick={(e) => { e.stopPropagation(); handleNodeClick(node.person); }} className="relative">
+          <div key={node.id} onClick={(e) => { e.stopPropagation(); handleNodeClick(node.person); }} className="relative group/btn">
             <PersonNode
               person={node.person}
               relationship={node.relationship}
@@ -102,7 +114,7 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
             />
             {/* Quick Add Button */}
             <button 
-              className="absolute z-20 bg-forest text-cream rounded-full h-8 w-8 flex items-center justify-center shadow-xl hover:scale-110 hover:bg-sage transition-all border-2 border-cream group"
+              className="absolute z-20 bg-forest text-cream rounded-full h-8 w-8 flex items-center justify-center shadow-xl hover:scale-110 hover:bg-sage transition-all border-2 border-cream group opacity-0 group-hover/btn:opacity-100"
               style={{ left: node.x + 220, top: node.y + 80 }}
               onClick={(e) => { e.stopPropagation(); handleAddMember(node.person); }}
               title="Add Relative"
@@ -114,9 +126,13 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
       </div>
 
       {/* Modals */}
-      {modalType === 'add' && selectedPerson && (
+      {selectedPerson && modalType === 'add' && (
         <AddMemberModal 
           existingPerson={selectedPerson}
+          allPersons={persons}
+          marriages={marriages}
+          isUser={selectedPerson.id === userPerson?.id}
+          isParentOfUser={parentChild.some(pc => pc.child_id === userPerson?.id && pc.parent_id === selectedPerson.id)}
           onClose={() => setModalType(null)}
           onSave={async (data: RelationshipFormData) => {
             await addRelationship({ existingPersonId: selectedPerson.id, data })
