@@ -44,7 +44,7 @@ export default function DashboardPage() {
     <div className="space-y-10">
       <header>
         <h1 className="text-4xl font-black text-forest dark:text-sage tracking-tight">Family Dashboard</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg">Your family&apos;s growth and activity at a glance.</p>
+        <p className="text-slate-500 dark:text-slate-400 mt-1 text-lg">Your family&apos;s growth and activity at a glance.</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -78,7 +78,9 @@ export default function DashboardPage() {
                   </div>
                   <span className={cn(
                     "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm",
-                    member.gender === 'male' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-pink-50 text-pink-600 border border-pink-100'
+                    member.gender === 'male' 
+                      ? 'bg-forest/10 text-forest border border-forest/20 dark:bg-forest/20' 
+                      : 'bg-sage/10 text-forest dark:text-sage border border-sage/20 dark:bg-sage/20'
                   )}>
                     {member.gender}
                   </span>

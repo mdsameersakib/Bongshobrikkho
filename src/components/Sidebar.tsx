@@ -67,7 +67,7 @@ export default function Sidebar() {
   return (
     <aside className="hidden md:flex md:w-64 bg-surface flex-shrink-0 flex-col border-r border-sand/30 dark:border-sand/10">
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-forest dark:text-sage tracking-tight">Bongshobrikkho</h1>
+        <h1 className="text-2xl font-bold text-sage tracking-tight">Bongshobrikkho</h1>
       </div>
       <nav className="mt-6 px-4 flex-1">
         <SidebarLink href="/dashboard" icon={LayoutDashboard}>Dashboard</SidebarLink>

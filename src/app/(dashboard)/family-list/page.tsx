@@ -125,10 +125,20 @@ export default function FamilyListPage() {
                 <tr key={person.id} className="group hover:bg-background/30 dark:hover:bg-background/50 transition-all">
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-2xl bg-forest text-cream flex items-center justify-center font-black text-lg shadow-sm group-hover:rotate-6 transition-transform">
+                      <div className="h-12 w-12 rounded-full bg-forest text-cream flex items-center justify-center font-black text-lg shadow-sm group-hover:rotate-6 transition-transform">
                         {person.first_name[0]}
                       </div>
-                      <span className="font-black text-forest dark:text-sage text-base">{getFullName(person)}</span>
+                      <div className="flex flex-col">
+                        <span className="font-black text-forest dark:text-sage text-base leading-tight">{getFullName(person)}</span>
+                        <span className={cn(
+                          "mt-1 w-fit px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border",
+                          person.gender === 'male' 
+                            ? 'bg-forest/10 text-forest border-forest/20 dark:bg-forest/20' 
+                            : 'bg-sage/10 text-forest dark:text-sage border-sage/20 dark:bg-sage/20'
+                        )}>
+                          {person.gender}
+                        </span>
+                      </div>
                     </div>
                   </td>
                   <td className="px-8 py-6">
@@ -191,11 +201,21 @@ export default function FamilyListPage() {
             <div key={person.id} className="p-6 space-y-5 hover:bg-background/30 dark:hover:bg-background/50 transition-all">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 rounded-2xl bg-forest text-cream flex items-center justify-center font-black text-xl shadow-md">
+                  <div className="h-14 w-14 rounded-full bg-forest text-cream flex items-center justify-center font-black text-xl shadow-md">
                     {person.first_name[0]}
                   </div>
                   <div>
-                    <h4 className="font-black text-forest dark:text-sage text-lg">{getFullName(person)}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-black text-forest dark:text-sage text-lg leading-tight">{getFullName(person)}</h4>
+                      <span className={cn(
+                        "px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border",
+                        person.gender === 'male' 
+                          ? 'bg-forest/10 text-forest border-forest/20 dark:bg-forest/20' 
+                          : 'bg-sage/10 text-forest dark:text-sage border-sage/20 dark:bg-sage/20'
+                      )}>
+                        {person.gender}
+                      </span>
+                    </div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1">
                       {getRelationshipToUser(person, userPerson, persons, marriages, parentChild)}
                     </p>

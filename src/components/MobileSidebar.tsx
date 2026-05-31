@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { 
@@ -31,7 +32,18 @@ export default function MobileSidebar() {
   return (
     <div className="md:hidden">
       <header className="bg-surface border-b border-sand/20 dark:border-sand/10 p-4 flex justify-between items-center h-16 sticky top-0 z-30">
-        <h1 className="text-xl font-black text-forest dark:text-sage tracking-tighter">Bongshobrikkho</h1>
+        <div className="flex items-center gap-2">
+          <div className="relative h-8 w-8 flex-shrink-0 bg-white rounded-full p-1 shadow-sm border border-sand/10">
+            <Image 
+              src="/BongshoBrikkho.svg" 
+              alt="Logo" 
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+          <h1 className="text-lg font-black text-sage tracking-tighter uppercase">BongshoBrikkho</h1>
+        </div>
         <button 
           onClick={() => setIsOpen(!isOpen)}
           className="p-2 text-slate-600 dark:text-slate-400 hover:bg-forest/10 dark:hover:bg-sage/10 rounded-lg transition-colors"
@@ -54,7 +66,18 @@ export default function MobileSidebar() {
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-6 flex justify-between items-center border-b border-sand/20 dark:border-sand/5">
-          <h1 className="text-2xl font-black text-forest dark:text-sage tracking-tighter">Bongshobrikkho</h1>
+          <div className="flex items-center gap-3">
+            <div className="relative h-10 w-10 flex-shrink-0 bg-white rounded-full p-1.5 shadow-sm border border-sand/10">
+              <Image 
+                src="/BongshoBrikkho.svg" 
+                alt="Logo" 
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+            <h1 className="text-xl font-black text-sage tracking-tighter uppercase">BongshoBrikkho</h1>
+          </div>
           <button onClick={() => setIsOpen(false)} className="p-1 text-slate-400">
             <X size={24} />
           </button>

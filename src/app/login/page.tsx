@@ -3,7 +3,8 @@
 import { createClient } from '@/lib/supabase-client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Loader2, TreePine, ChevronLeft, ChevronRight, User, Mail, Lock, Globe, Calendar, Users } from 'lucide-react'
+import Image from 'next/image'
+import { Loader2, ChevronLeft, ChevronRight, Mail, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function LoginPage() {
@@ -98,10 +99,15 @@ export default function LoginPage() {
         <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-sage/10 rounded-full blur-3xl" />
         
         <div className="text-center relative z-10 mb-10">
-          <div className="h-16 w-16 bg-forest text-cream rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-forest/20 rotate-3 group-hover:rotate-0 transition-transform duration-500">
-            <TreePine size={32} />
+          <div className="relative h-24 w-full mb-6">
+            <Image 
+              src="/BongshoBrikkho.svg" 
+              alt="BongshoBrikkho Logo" 
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
-          <h1 className="text-4xl font-black text-forest dark:text-sage tracking-tighter uppercase">Bongshobrikkho</h1>
           <p className="mt-3 text-slate-500 dark:text-slate-400 font-bold">
             {isLogin ? 'Welcome back! Sign in to your roots.' : 'Start your family legacy today.'}
           </p>
