@@ -23,6 +23,24 @@ export function useWallMutations() {
   const supabase = createClient()
   const queryClient = useQueryClient()
 
+  const uploadImage = async (file: Blob | File) => {
+    const fileExt = 'jpg' // We compress to jpeg in our utility
+    const fileName = `${Math.random().toString(36).slice(2)}_${Date.now()}.${fileExt}`
+    const filePath = `posts/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('family-wall')
+      .upload(filePath, file)
+
+    if (uploadError) throw uploadError
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('family-wall')
+      .getPublicUrl(filePath)
+
+    return publicUrl
+  }
+
   const createPost = useMutation({
     mutationFn: async ({ content, image_url }: { content: string, image_url?: string }) => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -68,6 +86,7 @@ export function useWallMutations() {
 
   return {
     createPost: createPost.mutateAsync,
+    uploadImage,
     addReaction: addReaction.mutateAsync,
     isPosting: createPost.isPending
   }
