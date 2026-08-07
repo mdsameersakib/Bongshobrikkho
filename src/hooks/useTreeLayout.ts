@@ -1,10 +1,11 @@
 import { Person, Marriage, ParentChild } from '@/types/database';
 import { getRelationshipToUser } from '@/utils/relationships';
 
+// 1. INCREASED SPACING FOR THE SUPER-HIGHWAY
 const NODE_WIDTH = 240;
 const NODE_HEIGHT = 100;
-const H_SPACING = 150;
-const V_SPACING = 160;
+const H_SPACING = 180; // Increased for more horizontal breathing room
+const V_SPACING = 280; // Massively increased to prevent lines from ever crashing into nodes
 
 export interface TreeNode {
   id: string;
@@ -42,21 +43,71 @@ export const calculateTreeLayout = (
 
   const personMap = new Map(allPersons.map((p) => [p.id, p]));
   
-// 1. Assign Depths and Islands (Family Clusters)
-  const depths = new Map<string, number>();
-  const islands = new Map<string, number>();
-  const visited = new Set<string>();
+  // Step 0: Identify the Main Trunk (Direct Ancestors)
+  const directAncestors = new Set<string>();
+  const userSpouses = marriages
+    .filter(m => m.person1_id === userPerson.id || m.person2_id === userPerson.id)
+    .map(m => m.person1_id === userPerson.id ? m.person2_id : m.person1_id);
+    
+  let currentTrunkIds = [userPerson.id, ...userSpouses];
   
-  // queue stores: { id, depth, island }
-  const queue: { id: string; depth: number; island: number }[] = [{ id: userPerson.id, depth: 0, island: 0 }];
-  visited.add(userPerson.id);
+  while (currentTrunkIds.length > 0) {
+    const nextIds: string[] = [];
+    currentTrunkIds.forEach(id => {
+      if (!directAncestors.has(id)) {
+        directAncestors.add(id);
+        const parents = parentChild
+          .filter(pc => pc.child_id === id)
+          .map(pc => pc.parent_id);
+        nextIds.push(...parents);
+      }
+    });
+    currentTrunkIds = nextIds;
+  }
 
-  while (queue.length > 0) {
-    const { id, depth, island } = queue.shift()!;
+  // Step 1: Binary Side Partitioning (Left vs Right)
+  const familySide = new Map<string, number>();
+  familySide.set(userPerson.id, 1); 
+  userSpouses.forEach(id => familySide.set(id, -1)); 
+
+  const queueSide = [userPerson.id, ...userSpouses];
+  const visitedSide = new Set(queueSide);
+
+  while (queueSide.length > 0) {
+    const id = queueSide.shift()!;
+    const side = familySide.get(id)!;
+
+    const parents = parentChild.filter(pc => pc.child_id === id).map(pc => pc.parent_id);
+    const children = parentChild.filter(pc => pc.parent_id === id).map(pc => pc.child_id);
+    const spouses = marriages.filter(m => m.person1_id === id || m.person2_id === id)
+      .map(m => m.person1_id === id ? m.person2_id : m.person1_id);
+
+    const relatives = [...parents, ...children, ...spouses];
+
+    relatives.forEach(relId => {
+      if ((id === userPerson.id && userSpouses.includes(relId)) ||
+          (userSpouses.includes(id) && relId === userPerson.id)) {
+        return;
+      }
+
+      if (!visitedSide.has(relId)) {
+        visitedSide.add(relId);
+        familySide.set(relId, side);
+        queueSide.push(relId);
+      }
+    });
+  }
+
+  // Step 2: Assign Vertical Depths
+  const depths = new Map<string, number>();
+  const visitedDepth = new Set<string>();
+  const queueDepth: { id: string; depth: number }[] = [{ id: userPerson.id, depth: 0 }];
+  visitedDepth.add(userPerson.id);
+
+  while (queueDepth.length > 0) {
+    const { id, depth } = queueDepth.shift()!;
     depths.set(id, depth);
-    islands.set(id, island);
 
-    // Blood relatives (Parents and Children) share the exact same Island
     const parents = parentChild
       .filter(pc => pc.child_id === id && personMap.has(pc.parent_id))
       .map(pc => pc.parent_id);
@@ -64,33 +115,28 @@ export const calculateTreeLayout = (
     const children = parentChild
       .filter(pc => pc.parent_id === id && personMap.has(pc.child_id))
       .map(pc => pc.child_id);
-
-    const bloodRelatives = [...parents, ...children];
     
-    bloodRelatives.forEach(relId => {
-      if (!visited.has(relId)) {
-        visited.add(relId);
-        // Parents go up a level (-1), children go down a level (+1)
-        const isParent = parents.includes(relId);
-        queue.push({ id: relId, depth: depth + (isParent ? -1 : 1), island });
+    [...parents, ...children].forEach(relId => {
+      if (!visitedDepth.has(relId)) {
+        visitedDepth.add(relId);
+        queueDepth.push({ id: relId, depth: depth + (parents.includes(relId) ? -1 : 1) });
       }
     });
 
-    // Spouses get a different Island number so they cluster completely separately
     const spouses = marriages
       .filter(m => (m.person1_id === id || m.person2_id === id))
       .map(m => m.person1_id === id ? m.person2_id : m.person1_id)
       .filter(sId => personMap.has(sId));
     
     spouses.forEach(sId => {
-      if (!visited.has(sId)) {
-        visited.add(sId);
-        queue.push({ id: sId, depth, island: island + 1 });
+      if (!visitedDepth.has(sId)) {
+        visitedDepth.add(sId);
+        queueDepth.push({ id: sId, depth });
       }
     });
   }
 
-// 2. Horizontal Grouping
+  // Step 3: Horizontal Grouping
   const groupsByDepth = new Map<number, string[][]>();
   const allDepths = Array.from(new Set(depths.values())).sort((a, b) => a - b);
 
@@ -115,10 +161,8 @@ export const calculateTreeLayout = (
         
         if (spouses.length === 1) {
           spouseGroup = [id, spouses[0]];
-          // Keep user on the right of their spouse
           if (spouseGroup[0] === userPerson.id) spouseGroup.reverse();
         } else if (spouses.length === 2) {
-          // Force shared spouses into the middle
           spouseGroup = [spouses[0], id, spouses[1]];
         } else {
           spouseGroup = [id, ...spouses];
@@ -135,7 +179,7 @@ export const calculateTreeLayout = (
     groupsByDepth.set(depth, groups);
   });
 
-// 3. Position Calculation (Top-Down First Pass)
+// Step 4: Top-Down Position Calculation
   const nodePositions = new Map<string, { x: number; y: number }>();
   let minX = 0, maxX = 0, minY = 0, maxY = 0;
 
@@ -146,7 +190,13 @@ export const calculateTreeLayout = (
     const y = depth * (NODE_HEIGHT + V_SPACING);
 
     const groupTargets = groups.map(group => {
-      const island = Math.min(...group.map(id => islands.get(id) || 0));
+      let side = 0;
+      for (const id of group) {
+        if (familySide.has(id)) {
+          side = familySide.get(id)!;
+          if (side !== 0) break;
+        }
+      }
       
       const parentPos = parentChild
         .filter(pc => group.includes(pc.child_id))
@@ -158,49 +208,59 @@ export const calculateTreeLayout = (
         targetX = parentPos.reduce((sum, pos) => sum + pos!.x, 0) / parentPos.length;
       }
       
-      // NEW: Check if this group has children to identify the active bloodline
       const hasChildren = parentChild.some(pc => group.includes(pc.parent_id));
+      const isMarried = group.length > 1;
+      const isBranch = hasChildren || isMarried;
       
-      return { group, targetX, hasParents: parentPos.length > 0, hasChildren, island };
+      return { group, targetX, hasParents: parentPos.length > 0, isBranch, side };
     });
 
     groupTargets.sort((a, b) => {
-      // Primary Sort: In-laws to the left, Main family to the right
-      if (a.island !== b.island) return b.island - a.island; 
-      
-      // Secondary Sort: Align perfectly underneath parents
+      // RULE 1: Strict Lineage Alignment
       if (a.hasParents && b.hasParents) {
-        // If they have different parents, sort by parent location
-        if (a.targetX !== b.targetX) return a.targetX - b.targetX;
-      } else if (a.hasParents && !b.hasParents) {
-        return -1;
-      } else if (!a.hasParents && b.hasParents) {
-        return 1;
-      }
-
-      // Tertiary Sort (Tie-Breaker): Center of Gravity
-      // Push groups with children toward the middle of the canvas
-      const aLineage = a.hasChildren ? 1 : 0;
-      const bLineage = b.hasChildren ? 1 : 0;
-
-      if (aLineage !== bLineage) {
-        if (a.island > 0) {
-          // Left Island (In-laws): Push active lineage to the right (+ return)
-          return aLineage - bLineage;
-        } else {
-          // Right Island (Main): Push active lineage to the left (- return)
-          return bLineage - aLineage;
+        if (Math.abs(a.targetX - b.targetX) > 5) {
+          return a.targetX - b.targetX;
         }
       }
+      
+      // RULE 2: Families with targets go first
+      if (a.hasParents && !b.hasParents) return -1;
+      if (!a.hasParents && b.hasParents) return 1;
 
-      return 0; // Final fallback
+      // RULE 3: Binary Side Partitioning
+      if (a.side !== b.side) {
+        return a.side - b.side; 
+      }
+
+      // RULE 4: Main Trunk Gravity (Center priority)
+      const aIsDirect = a.group.some(id => directAncestors.has(id)) ? 1 : 0;
+      const bIsDirect = b.group.some(id => directAncestors.has(id)) ? 1 : 0;
+      
+      if (aIsDirect !== bIsDirect) {
+        return a.side < 0 ? (aIsDirect - bIsDirect) : (bIsDirect - aIsDirect);
+      }
+
+      // RULE 5: Centrifugal Island Force (NEW)
+      // Push siblings with spouses/children to the OUTSIDE edges so their lines drop safely
+      const aBranch = a.isBranch ? 1 : 0;
+      const bBranch = b.isBranch ? 1 : 0;
+      
+      if (aBranch !== bBranch) {
+        // Left side pushes outward to the Left. Right side pushes outward to the Right.
+        return a.side < 0 ? (bBranch - aBranch) : (aBranch - bBranch);
+      }
+
+      return 0;
     });
 
     let currentX = Number.NEGATIVE_INFINITY;
 
-    groupTargets.forEach(({ group, targetX }) => {
+    groupTargets.forEach(({ group, targetX, isBranch }) => {
+      // NEW: Add a "Moat" of empty space around families to create the Island effect
+      const islandPadding = isBranch ? H_SPACING * 1.5 : 0;
+      
       const groupWidth = (group.length * NODE_WIDTH) + ((group.length - 1) * H_SPACING);
-      const groupStartX = Math.max(currentX, targetX - (groupWidth / 2));
+      const groupStartX = Math.max(currentX + islandPadding, targetX - (groupWidth / 2));
 
       group.forEach((id, index) => {
         const x = groupStartX + index * (NODE_WIDTH + H_SPACING);
@@ -212,19 +272,18 @@ export const calculateTreeLayout = (
         minY = Math.min(minY, y);
       });
 
-      currentX = groupStartX + groupWidth + H_SPACING;
+      // Apply padding to the trailing edge as well
+      currentX = groupStartX + groupWidth + H_SPACING + islandPadding;
     });
   });
 
-  // 3.5. Bottom-Up Re-centering (Second Pass)
-  // Pull parents to center directly over their children's final positions
+  // Step 5: Bottom-Up Re-centering
   const bottomUpDepths = [...allDepths].sort((a, b) => b - a);
 
   bottomUpDepths.forEach(depth => {
     const groups = groupsByDepth.get(depth) || [];
     let currentX = Number.NEGATIVE_INFINITY;
 
-    // Sort groups left-to-right based on their current Top-Down positions
     const orderedGroups = groups.map(group => {
       const firstNode = nodePositions.get(group[0])!;
       return { group, currentStartX: firstNode.x };
@@ -232,8 +291,11 @@ export const calculateTreeLayout = (
 
     orderedGroups.forEach(({ group, currentStartX }) => {
       const groupWidth = (group.length * NODE_WIDTH) + ((group.length - 1) * H_SPACING);
+      
+      // Determine if this group is an Island so we can respect its padding moving bottom-up
+      const isBranch = group.length > 1 || parentChild.some(pc => group.includes(pc.parent_id));
+      const islandPadding = isBranch ? H_SPACING * 1.5 : 0;
 
-      // Find the children connected to this specific parent group
       const childrenPos = parentChild
         .filter(pc => group.includes(pc.parent_id))
         .map(pc => nodePositions.get(pc.child_id))
@@ -241,16 +303,14 @@ export const calculateTreeLayout = (
 
       let newStartX = currentStartX;
 
-      // If they have children, calculate the perfect center point above them
       if (childrenPos.length > 0) {
         const targetX = childrenPos.reduce((sum, pos) => sum + pos!.x, 0) / childrenPos.length;
         newStartX = targetX - (groupWidth / 2);
       }
 
-      // Prevent overlapping if a parent group shifts into another parent group
-      newStartX = Math.max(currentX, newStartX);
+      // Respect the padding of the previous group so Islands don't collapse inward
+      newStartX = Math.max(currentX + islandPadding, newStartX);
 
-      // Apply the new centered X coordinates
       group.forEach((id, index) => {
         const x = newStartX + index * (NODE_WIDTH + H_SPACING);
         const pos = nodePositions.get(id)!;
@@ -260,11 +320,11 @@ export const calculateTreeLayout = (
         minX = Math.min(minX, x);
       });
 
-      currentX = newStartX + groupWidth + H_SPACING;
+      currentX = newStartX + groupWidth + H_SPACING + islandPadding;
     });
   });
 
-  // 3.8. Normalization Pass (Shift away from negative numbers)
+  // Step 6: Normalization Pass
   const shiftX = minX < 0 ? Math.abs(minX) + 50 : 50; 
   
   nodePositions.forEach(pos => {
@@ -274,7 +334,7 @@ export const calculateTreeLayout = (
   maxX += shiftX;
   minX = 0;
 
-  // 4. Build Nodes
+  // Step 7: Build Nodes
   const nodes: TreeNode[] = [];
   nodePositions.forEach((pos, id) => {
     const person = personMap.get(id);
@@ -287,7 +347,7 @@ export const calculateTreeLayout = (
     }
   });
 
-  // 5. Build Edges (Lines and Connections)
+  // Step 8: Build Edges and Junctions (THE LANE FIX)
   const edges: TreeEdge[] = [];
 
   marriages.forEach(m => {
@@ -336,12 +396,21 @@ export const calculateTreeLayout = (
 
     const endX = cPos.x + NODE_WIDTH / 2;
     const endY = cPos.y;
-    const baseMidY = (startY + endY) / 2;
+    
+    // NEW MATH: Standardize the true midpoint between rows regardless of marriage status.
+    const parentRowBottom = pPos.y + NODE_HEIGHT;
+    const baseMidY = (parentRowBottom + endY) / 2;
 
     if (!familyMidY.has(familyId)) {
-      const currentOffset = rowOffsets.get(baseMidY) || 0;
-      familyMidY.set(familyId, baseMidY + currentOffset);
-      rowOffsets.set(baseMidY, currentOffset + 30);
+      const familyCount = rowOffsets.get(baseMidY) || 0;
+      
+      // Alternate lanes outward symmetrically: 0px, -25px, +25px, -50px, +50px
+      const direction = familyCount % 2 === 0 ? -1 : 1;
+      const step = Math.ceil(familyCount / 2);
+      const offset = step * 25 * direction;
+      
+      familyMidY.set(familyId, baseMidY + offset);
+      rowOffsets.set(baseMidY, familyCount + 1);
     }
 
     const midY = familyMidY.get(familyId)!;
