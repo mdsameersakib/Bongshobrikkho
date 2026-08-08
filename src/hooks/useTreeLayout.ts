@@ -37,7 +37,8 @@ export const calculateTreeLayout = (
   allPersons: Person[],
   userPerson: Person | null,
   marriages: Marriage[] = [],
-  parentChild: ParentChild[] = []
+  parentChild: ParentChild[] = [],
+  verticalSpacing = V_SPACING
 ): TreeLayout => {
   if (!userPerson || !allPersons?.length) return { nodes: [], edges: [], width: 0, height: 0 };
 
@@ -187,7 +188,7 @@ export const calculateTreeLayout = (
 
   sortedDepths.forEach(depth => {
     const groups = groupsByDepth.get(depth) || [];
-    const y = depth * (NODE_HEIGHT + V_SPACING);
+    const y = depth * (NODE_HEIGHT + verticalSpacing);
 
     const groupTargets = groups.map(group => {
       let side = 0;

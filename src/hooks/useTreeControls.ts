@@ -22,16 +22,15 @@ export default function useTreeControls(containerRef: React.RefObject<HTMLDivEle
     setTransform(t => ({ ...t, x: t.x + dx, y: t.y + dy }));
   }, []);
 
-  const onWheel = useCallback((e: React.WheelEvent | { clientX: number, clientY: number, deltaY: number, preventDefault: () => void }) => {
-    e.preventDefault();
+  const zoomAt = useCallback((clientX: number, clientY: number, deltaY: number) => {
     const container = containerRef.current;
     if (!container) return;
     
     const rect = container.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const mouseX = clientX - rect.left;
+    const mouseY = clientY - rect.top;
     
-    const scaleMultiplier = e.deltaY > 0 ? 0.9 : 1.1;
+    const scaleMultiplier = deltaY > 0 ? 0.9 : 1.1;
     
     setTransform(t => {
       const newScale = Math.max(0.2, Math.min(2, t.scale * scaleMultiplier));
@@ -44,9 +43,10 @@ export default function useTreeControls(containerRef: React.RefObject<HTMLDivEle
   const zoom = useCallback((direction: 'in' | 'out') => {
     const container = containerRef.current;
     if (!container) return;
-    const { width, height } = container.getBoundingClientRect();
-    onWheel({ clientX: width/2, clientY: height/2, deltaY: direction === 'out' ? 1 : -1, preventDefault: () => {} });
-  }, [containerRef, onWheel]);
+    const rect = container.getBoundingClientRect();
+    const { width, height } = rect;
+    zoomAt(rect.left + width / 2, rect.top + height / 2, direction === 'out' ? 1 : -1);
+  }, [containerRef, zoomAt]);
   
   const centerOnNode = useCallback(() => {
     const container = containerRef.current;
@@ -79,6 +79,12 @@ export default function useTreeControls(containerRef: React.RefObject<HTMLDivEle
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      zoomAt(e.clientX, e.clientY, e.deltaY);
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
     let pinch: { distance: number, centerX: number, centerY: number } | null = null;
     const getPoint = (t: Touch) => ({ x: t.clientX, y: t.clientY });
     const dist = (a: {x:number, y:number}, b: {x:number, y:number}) => Math.hypot(a.x-b.x, a.y-b.y);
@@ -127,12 +133,13 @@ export default function useTreeControls(containerRef: React.RefObject<HTMLDivEle
     el.addEventListener('touchend', onTouchEnd);
     el.addEventListener('touchcancel', onTouchEnd);
     return () => {
+      el.removeEventListener('wheel', handleWheel);
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
       el.removeEventListener('touchcancel', onTouchEnd);
     };
-  }, [containerRef]);
+  }, [containerRef, zoomAt]);
 
-  return { zoom, centerOnNode, transform, eventHandlers: { onMouseDown, onMouseUp, onMouseMove, onWheel, onMouseLeave: onMouseUp } };
+  return { zoom, centerOnNode, transform, eventHandlers: { onMouseDown, onMouseUp, onMouseMove, onMouseLeave: onMouseUp } };
 }
