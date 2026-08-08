@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #FFF8EC; /* Cream */
+  --foreground: #2D3625; /* Deep Forest/Olive */
+  --surface: #FFFFFF;
+  --surface-alt: #F9F3E5; /* Slightly darker cream for nested items */
+  --brand-forest: #546B41;
+  --brand-sage: #99AD7A;
+  --brand-sand: #DCCCAC;
+  --brand-cream: #FFF8EC;
+  --tree-line: #3D3129; /* Dark Brown */
+}
+
+.dark {
+  --background: #1B1512; /* Trunk Dark Brown - Deepest */
+  --foreground: #FFF8EC;
+  --surface: #261E1A;    /* Bark Brown - Cards */
+  --surface-alt: #332822; /* Light Bark - Inputs/Inner items */
+  --brand-forest: #99AD7A;
+  --brand-sage: #546B41;
+  --brand-sand: #3D3129;
+  --brand-cream: #1B1512;
+  --tree-line: #99AD7A; /* Light Green */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-forest: var(--brand-forest);
+  --color-sage: var(--brand-sage);
+  --color-sand: var(--brand-sand);
+  --color-cream: var(--brand-cream);
+  --color-tree-line: var(--tree-line);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Organic Texture Utility - Using the new BG.svg */
+.bg-texture {
+  background-image: linear-gradient(rgba(255, 248, 236, 0.9), rgba(255, 248, 236, 0.9)), url("/BG.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.dark .bg-texture {
+  background-image: linear-gradient(rgba(27, 21, 18, 0.9), rgba(27, 21, 18, 0.9)), url("/BG.svg");
+}
+
+/* Ensure all interactive elements transition smoothly */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevent layout shifts during transitions */
+.no-transition * {
+  transition: none !important;
+}
