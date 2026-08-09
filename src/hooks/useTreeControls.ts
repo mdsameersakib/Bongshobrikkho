@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 
-export default function useTreeControls(containerRef: React.RefObject<HTMLDivElement | null>, userNodeId: string | null) {
+export default function useTreeControls(containerRef: React.RefObject<HTMLDivElement | null>, userNodeId: string | null, nodeReadyKey = 0) {
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 0.6 });
   const isPanning = useRef(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
@@ -71,10 +71,10 @@ export default function useTreeControls(containerRef: React.RefObject<HTMLDivEle
   }, [containerRef, userNodeId]);
   
   useEffect(() => {
-    if (userNodeId) {
-      centerOnNode();
-    }
-  }, [userNodeId, centerOnNode]);
+    if (!userNodeId || !nodeReadyKey) return
+    const frame = requestAnimationFrame(centerOnNode)
+    return () => cancelAnimationFrame(frame)
+  }, [userNodeId, nodeReadyKey, centerOnNode]);
 
   useEffect(() => {
     const el = containerRef.current;

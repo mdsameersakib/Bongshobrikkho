@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useForm, Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { X, Loader2 } from 'lucide-react'
@@ -39,9 +39,15 @@ export default function EditMemberModal({ person, onSave, onClose }: EditMemberM
       email: person?.email || '',
     }
   })
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const onSubmit = async (data: PersonFormData) => {
-    await onSave(data)
+    try {
+      setSaveError(null)
+      await onSave(data)
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Unable to save this member.')
+    }
   }
 
   return (
@@ -64,6 +70,7 @@ export default function EditMemberModal({ person, onSave, onClose }: EditMemberM
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-8">
+            {saveError && <p className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{saveError}</p>}
             <div className="space-y-6">
               <h4 className="text-xs font-black text-forest dark:text-sage uppercase tracking-[0.2em]">Personal Details</h4>
               

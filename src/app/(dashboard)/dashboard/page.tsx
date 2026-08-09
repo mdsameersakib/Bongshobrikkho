@@ -7,6 +7,7 @@ import { Users, Calendar, UserPlus, MessageSquare, ChevronRight, Network, type L
 import Link from 'next/link'
 import { formatDateDMY } from '@/utils/date'
 import { cn } from '@/lib/utils'
+import { QueryError } from '@/components/QueryState'
 
 const StatCard = ({ title, value, icon: Icon, color }: { title: string, value: number, icon: LucideIcon, color: 'forest' | 'sage' | 'sand' | 'cream' }) => {
   const colors = {
@@ -33,8 +34,8 @@ const StatCard = ({ title, value, icon: Icon, color }: { title: string, value: n
 }
 
 export default function DashboardPage() {
-  const { data: stats } = useDashboardStats()
-  const { data: persons = [] } = usePersons()
+  const { data: stats, error: statsError } = useDashboardStats()
+  const { data: persons = [], error: personsError } = usePersons()
   
   const latestMembers = [...persons]
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
@@ -42,6 +43,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-10">
+      {(statsError || personsError) && <QueryError error={statsError || personsError} />}
       <header>
         <h1 className="text-4xl font-black text-forest dark:text-sage tracking-tight">Family Dashboard</h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1 text-lg">Your family&apos;s growth and activity at a glance.</p>
@@ -107,9 +109,7 @@ export default function DashboardPage() {
             <p className="text-cream/80 text-sm leading-relaxed relative z-10">
               Add placeholder profiles for deceased relatives to complete your lineage and preserve family history for future generations.
             </p>
-            <button className="mt-6 bg-background text-forest px-4 py-2 rounded-xl text-xs font-black shadow-lg hover:bg-sage hover:text-cream transition-colors relative z-10">
-              LEARN MORE
-            </button>
+            <Link href="/family-tree" className="mt-6 inline-block bg-background text-forest px-4 py-2 rounded-xl text-xs font-black shadow-lg hover:bg-sage hover:text-cream transition-colors relative z-10">VIEW TREE</Link>
           </div>
 
           <div className="bg-sand/10 dark:bg-surface p-6 rounded-2xl border-2 border-dashed border-sand/40 dark:border-sand/10 flex flex-col items-center text-center">
@@ -118,9 +118,7 @@ export default function DashboardPage() {
             </div>
             <h4 className="font-black text-forest dark:text-sage uppercase tracking-wider text-sm">Expand Your Reach</h4>
             <p className="text-xs text-slate-500 mt-2">Invite siblings or cousins to collaborate on your family tree.</p>
-            <button className="mt-4 w-full py-2 border-2 border-forest dark:border-sage text-forest dark:text-sage font-black rounded-xl hover:bg-forest dark:hover:bg-sage hover:text-cream transition-all text-xs">
-              SEND INVITE
-            </button>
+            <Link href="/family-list" className="mt-4 block w-full py-2 text-center border-2 border-forest dark:border-sage text-forest dark:text-sage font-black rounded-xl hover:bg-forest dark:hover:bg-sage hover:text-cream transition-all text-xs">FIND FAMILY</Link>
           </div>
         </div>
       </div>

@@ -59,7 +59,7 @@ const demoParentChild: ParentChild[] = [
 export default function LandingTreeDemo() {
   const containerRef = useRef<HTMLDivElement>(null)
   const layout = useMemo(() => calculateTreeLayout(demoPersons, demoPersons.find((person) => person.id === 'nila') || null, demoMarriages, demoParentChild, 140), [])
-  const { zoom, centerOnNode, transform, eventHandlers } = useTreeControls(containerRef, 'nila')
+  const { zoom, centerOnNode, transform, eventHandlers } = useTreeControls(containerRef, 'nila', layout.nodes.length)
 
   return (
     <div

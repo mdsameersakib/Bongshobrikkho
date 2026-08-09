@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useForm, Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { X, Loader2, Users } from 'lucide-react'
@@ -13,7 +13,6 @@ interface AddMemberModalProps {
   existingPerson: Person
   allPersons: Person[]
   marriages: Marriage[]
-  isUser: boolean
   isParentOfUser: boolean
   onSave: (data: RelationshipFormData) => void
   onClose: () => void
@@ -23,7 +22,6 @@ export default function AddMemberModal({
   existingPerson, 
   allPersons, 
   marriages, 
-  isUser, 
   isParentOfUser, 
   onSave, 
   onClose 
@@ -45,7 +43,6 @@ export default function AddMemberModal({
     register,
     handleSubmit,
     watch,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RelationshipFormData>({
     resolver: zodResolver(relationshipSchema) as Resolver<RelationshipFormData>,
@@ -80,12 +77,14 @@ export default function AddMemberModal({
   const marriageStatus = watch('marriage_status')
   const addBothParents = watch('add_both_parents')
   const selectedOtherParentId = watch('other_parent_id')
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const onSubmit = async (data: RelationshipFormData) => {
     try {
+      setSaveError(null)
       await onSave(data)
     } catch (err) {
-      console.error('Failed to save relative:', err)
+      setSaveError(err instanceof Error ? err.message : 'Unable to save this relative.')
     }
   }
 
@@ -110,6 +109,7 @@ export default function AddMemberModal({
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-8">
+            {saveError && <p className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{saveError}</p>}
             {/* Show top-level errors if any */}
             {Object.keys(errors).length > 0 && (
               <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-100 dark:border-red-900/30">

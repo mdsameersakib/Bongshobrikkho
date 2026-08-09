@@ -85,9 +85,7 @@ export function useProfileSearch() {
   return useMutation({
     mutationFn: async (email: string) => {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', email)
+        .rpc('lookup_profile_by_email', { p_email: email.trim() })
       
       if (error) throw error
       return data

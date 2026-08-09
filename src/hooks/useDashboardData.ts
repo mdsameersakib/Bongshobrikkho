@@ -7,23 +7,27 @@ export function useDashboardStats() {
   return useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
-      const { count: personsCount } = await supabase
+      const { count: personsCount, error: personsError } = await supabase
         .from('persons')
         .select('*', { count: 'exact', head: true })
+      if (personsError) throw personsError
 
-      const { count: postsCount } = await supabase
+      const { count: postsCount, error: postsError } = await supabase
         .from('posts')
         .select('*', { count: 'exact', head: true })
+      if (postsError) throw postsError
 
-      const { count: connectionsCount } = await supabase
+      const { count: connectionsCount, error: connectionsError } = await supabase
         .from('network_connections')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending')
+      if (connectionsError) throw connectionsError
 
-      const { count: eventsCount } = await supabase
+      const { count: eventsCount, error: eventsError } = await supabase
         .from('events')
         .select('*', { count: 'exact', head: true })
         .gte('event_date', new Date().toISOString().split('T')[0])
+      if (eventsError) throw eventsError
 
       return {
         persons: personsCount || 0,

@@ -11,6 +11,8 @@ import { useFamilyMutations } from '@/hooks/useFamilyMutations'
 import { getFullName } from '@/utils/name'
 import EditMemberModal from '@/components/EditMemberModal'
 import { PersonFormData } from '@/types/forms'
+import { usePrivacySettings, useNetworkMutations } from '@/hooks/useNetworkData'
+import { QueryError } from '@/components/QueryState'
 
 export default function SettingsPage() {
   const supabase = createClient()
@@ -20,9 +22,11 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
 
-  const { data: profile } = useProfile()
-  const { data: persons = [] } = usePersons()
+  const { data: profile, error: profileError } = useProfile()
+  const { data: persons = [], error: personsError } = usePersons()
   const { updatePerson } = useFamilyMutations()
+  const { data: privacy, error: privacyError } = usePrivacySettings()
+  const { updatePrivacy, isPending: privacyPending } = useNetworkMutations()
 
   const userPerson = persons.find(p => p.id === profile?.person_id)
 
@@ -52,6 +56,8 @@ export default function SettingsPage() {
   }
 
   if (!mounted) return null
+
+  if (profileError || personsError || privacyError) return <QueryError error={profileError || personsError || privacyError} />
 
   return (
     <div className="max-w-6xl mx-auto space-y-10">
@@ -88,6 +94,15 @@ export default function SettingsPage() {
             >
               EDIT PROFILE DETAILS
             </button>
+          </div>
+        </section>
+
+        <section className="bg-surface rounded-3xl border border-sand/20 dark:border-sand/10 shadow-xl overflow-hidden">
+          <div className="p-6 border-b border-sand/10 dark:border-sand/5 flex items-center gap-4"><div className="h-10 w-10 rounded-xl bg-forest/10 text-forest flex items-center justify-center"><Shield size={20} /></div><h2 className="text-xl font-black text-forest dark:text-sage">Branch Privacy</h2></div>
+          <div className="p-8 space-y-4">
+            {([['share_parents', 'Share parents'], ['share_siblings', 'Share siblings'], ['share_children', 'Share children'], ['share_contact_info', 'Share contact information']] as const).map(([key, label]) => (
+              <label key={key} className="flex items-center justify-between rounded-2xl bg-background/40 p-4 text-sm font-bold text-slate-700 dark:text-slate-200"><span>{label}</span><input type="checkbox" checked={privacy?.[key] ?? (key !== 'share_contact_info')} disabled={privacyPending} onChange={e => updatePrivacy({ [key]: e.target.checked })} className="h-5 w-5 rounded text-forest" /></label>
+            ))}
           </div>
         </section>
 

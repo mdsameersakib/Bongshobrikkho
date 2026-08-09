@@ -5,6 +5,9 @@ import { PersonFormData, RelationshipFormData } from '@/types/forms'
 export function useFamilyMutations() {
   const supabase = createClient()
   const queryClient = useQueryClient()
+  const requireSuccess = ({ error }: { error: unknown }) => {
+    if (error) throw error
+  }
 
   const addPersonMutation = useMutation({
     mutationFn: async (data: PersonFormData) => {
@@ -130,20 +133,20 @@ export function useFamilyMutations() {
           // Find the user's person record
           const { data: profile } = await supabase.from('profiles').select('person_id').eq('id', user.id).single()
           if (profile?.person_id) {
-            await supabase.from('parent_child').insert({ parent_id: newPerson.id, child_id: profile.person_id })
+          requireSuccess(await supabase.from('parent_child').insert({ parent_id: newPerson.id, child_id: profile.person_id }))
           }
         }
       } else if (data.relationship_type === 'child') {
         // Link to existing person as parent
-        await supabase.from('parent_child').insert({ parent_id: existingPersonId, child_id: newPerson.id })
+        requireSuccess(await supabase.from('parent_child').insert({ parent_id: existingPersonId, child_id: newPerson.id }))
 
         // Link to other parent if provided
         if (data.other_parent_id) {
-          await supabase.from('parent_child').insert({ parent_id: data.other_parent_id, child_id: newPerson.id })
+          requireSuccess(await supabase.from('parent_child').insert({ parent_id: data.other_parent_id, child_id: newPerson.id }))
         }
       } else if (data.relationship_type === 'parent') {
         // Link existing person as child of new person
-        await supabase.from('parent_child').insert({ parent_id: newPerson.id, child_id: existingPersonId })
+        requireSuccess(await supabase.from('parent_child').insert({ parent_id: newPerson.id, child_id: existingPersonId }))
 
         // Check if adding both parents
         if (data.add_both_parents && data.parent2_data) {
@@ -156,14 +159,14 @@ export function useFamilyMutations() {
             ...p2Data
           })
           // Link existing person as child of parent 2
-          await supabase.from('parent_child').insert({ parent_id: parent2.id, child_id: existingPersonId })
+          requireSuccess(await supabase.from('parent_child').insert({ parent_id: parent2.id, child_id: existingPersonId }))
           // Link the two parents as married
-          await supabase.from('marriages').insert({
+          requireSuccess(await supabase.from('marriages').insert({
             person1_id: newPerson.id < parent2.id ? newPerson.id : parent2.id,
             person2_id: newPerson.id < parent2.id ? parent2.id : newPerson.id,
             start_date: data.marriage_start_date || null,
             status: 'married'
-          })
+          }))
         }
       } else if (data.relationship_type === 'sibling') {
         // Find parents of existing person
@@ -177,7 +180,7 @@ export function useFamilyMutations() {
             parent_id: p.parent_id,
             child_id: newPerson.id
           }))
-          await supabase.from('parent_child').insert(pcLinks)
+          requireSuccess(await supabase.from('parent_child').insert(pcLinks))
         }
       }
       

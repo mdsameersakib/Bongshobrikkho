@@ -39,8 +39,26 @@ export function useEventMutations() {
     }
   })
 
+  const updateEvent = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Omit<FamilyEvent, 'id' | 'created_at'>> }) => {
+      const { error } = await supabase.from('events').update(data).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
+  })
+
+  const deleteEvent = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('events').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
+  })
+
   return {
     addEvent: addEvent.mutateAsync,
-    isAdding: addEvent.isPending
+    updateEvent: updateEvent.mutateAsync,
+    deleteEvent: deleteEvent.mutateAsync,
+    isAdding: addEvent.isPending || updateEvent.isPending || deleteEvent.isPending
   }
 }

@@ -12,37 +12,74 @@ import AddMemberModal from '@/components/AddMemberModal'
 import EditMemberModal from '@/components/EditMemberModal'
 import { RelationshipFormData, PersonFormData } from '@/types/forms'
 import { cn } from '@/lib/utils'
+import { QueryError } from '@/components/QueryState'
+import { useConnections, useNetworkMutations } from '@/hooks/useNetworkData'
+import MergeTreeModal from '@/components/MergeTreeModal'
 
 type PersonWithUser = Person & { is_user: boolean }
 
 export default function FamilyListPage() {
-  const { data: profile } = useProfile()
-  const { data: persons = [] } = usePersons()
-  const { data: marriages = [] } = useMarriages()
-  const { data: parentChild = [] } = useParentChild()
+  const { data: userProfile, error: profileError } = useProfile()
+  const { data: persons = [], isLoading: personsLoading, error: personsError } = usePersons()
+  const { data: marriages = [], error: marriagesError } = useMarriages()
+  const { data: parentChild = [], error: parentChildError } = useParentChild()
+  const { data: connections = [], error: connectionsError } = useConnections()
   const { addPerson, addRelationship, updatePerson, deletePerson } = useFamilyMutations()
+  const { requestConnection, updateConnection, cancelConnection, isPending: networkPending } = useNetworkMutations()
   const searchMutation = useProfileSearch()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Profile[]>([])
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
   const [modalType, setModalType] = useState<'add' | 'edit' | 'create' | 'delete' | null>(null)
+  const [memberSearch, setMemberSearch] = useState('')
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [mergeTargetUid, setMergeTargetUid] = useState<string | null>(null)
 
   // Correctly identify the "user" based on their profile link
-  const userPerson = persons.find(p => p.id === profile?.person_id) || null
+  const userPerson = persons.find(p => p.id === userProfile?.person_id) || null
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!searchQuery) return
-    const results = await searchMutation.mutateAsync(searchQuery)
-    setSearchResults(results)
+    try {
+      setActionError(null)
+      const results = await searchMutation.mutateAsync(searchQuery)
+      setSearchResults(results as Profile[])
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Unable to search for that account.')
+    }
+  }
+
+  const visiblePersons = persons.filter(person => {
+    const query = memberSearch.trim().toLowerCase()
+    if (!query) return true
+    return getFullName(person).toLowerCase().includes(query) || person.gender?.toLowerCase().includes(query)
+  })
+
+  const connectionFor = (profileId: string) => connections.find(connection =>
+    connection.requester_uid === userProfile?.id && connection.recipient_uid === profileId ||
+    connection.recipient_uid === userProfile?.id && connection.requester_uid === profileId
+  )
+
+  const runNetworkAction = async (action: () => Promise<unknown>) => {
+    try {
+      setActionError(null)
+      await action()
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Unable to update the connection.')
+    }
   }
 
   const handleDelete = async () => {
     if (!selectedPerson) return
-    await deletePerson(selectedPerson.id)
-    setModalType(null)
-    setSelectedPerson(null)
+    try {
+      await deletePerson(selectedPerson.id)
+      setModalType(null)
+      setSelectedPerson(null)
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Unable to delete this member.')
+    }
   }
 
   return (
@@ -81,6 +118,22 @@ export default function FamilyListPage() {
         </div>
       </header>
 
+      {actionError && <QueryError error={new Error(actionError)} />}
+
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <input
+          value={memberSearch}
+          onChange={(e) => setMemberSearch(e.target.value)}
+          placeholder="Filter family members..."
+          className="w-full rounded-2xl border border-sand/30 bg-surface px-5 py-3 text-sm outline-none focus:ring-4 focus:ring-forest/10 sm:max-w-sm"
+        />
+        <p className="self-center text-xs font-black uppercase tracking-widest text-slate-400">
+          {visiblePersons.length} of {persons.length} members
+        </p>
+      </div>
+
+      {connections.some(connection => connection.status === 'accepted') && <div className="rounded-3xl border border-sand/20 bg-surface p-5 shadow-sm"><p className="text-xs font-black uppercase tracking-widest text-forest dark:text-sage">Connected family trees</p><div className="mt-3 flex flex-wrap gap-3">{connections.filter(connection => connection.status === 'accepted').map(connection => { const targetUid = connection.requester_uid === userProfile?.id ? connection.recipient_uid : connection.requester_uid; return <button key={connection.id} type="button" onClick={() => setMergeTargetUid(targetUid)} className="rounded-xl border border-forest/30 px-4 py-2 text-xs font-black text-forest hover:bg-forest hover:text-cream">MERGE TREE</button> })}</div></div>}
+
       {/* Search Results Overlay/Section */}
       {searchResults.length > 0 && (
         <div className="bg-sand/10 dark:bg-surface/40 border-2 border-dashed border-sand/40 dark:border-sand/10 rounded-3xl p-6 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -91,22 +144,31 @@ export default function FamilyListPage() {
             <button onClick={() => setSearchResults([])} className="text-[10px] font-black uppercase tracking-tighter text-slate-400 hover:text-red-500 transition-colors">Dismiss</button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {searchResults.map((profile: Profile) => (
-              <div key={profile.id} className="flex justify-between items-center bg-surface p-4 rounded-2xl border border-sand/20 dark:border-sand/10 shadow-sm group hover:border-forest dark:hover:border-sage transition-all">
+            {searchResults.map((candidate: Profile) => (
+              <div key={candidate.id} className="flex justify-between items-center bg-surface p-4 rounded-2xl border border-sand/20 dark:border-sand/10 shadow-sm group hover:border-forest dark:hover:border-sage transition-all">
                 <div className="overflow-hidden">
-                  <p className="text-sm font-black text-slate-800 dark:text-slate-100 truncate">{profile.email?.split('@')[0] || 'Anonymous'}</p>
-                  <p className="text-xs text-slate-500 truncate">{profile.email}</p>
+                  <p className="text-sm font-black text-slate-800 dark:text-slate-100 truncate">{candidate.email?.split('@')[0] || 'Anonymous'}</p>
+                  <p className="text-xs text-slate-500 truncate">{candidate.email}</p>
                 </div>
-                <button className="p-2 bg-background dark:bg-background text-forest dark:text-sage rounded-xl hover:bg-forest hover:text-cream transition-all">
-                  <UserPlus size={18} />
-                </button>
+                {(() => {
+                  const connection = connectionFor(candidate.id)
+                  if (!connection) return <button type="button" disabled={networkPending} onClick={() => runNetworkAction(() => requestConnection(candidate.id))} className="p-2 bg-background dark:bg-background text-forest dark:text-sage rounded-xl hover:bg-forest hover:text-cream transition-all disabled:opacity-50"><UserPlus size={18} /></button>
+                  if (connection.status === 'accepted') return <span className="px-3 py-2 text-[10px] font-black uppercase text-forest">Connected</span>
+                  if (connection.requester_uid === userProfile?.id) return <button type="button" disabled={networkPending} onClick={() => runNetworkAction(() => cancelConnection(connection.id))} className="px-3 py-2 text-[10px] font-black uppercase text-slate-400">Pending</button>
+                  return <div className="flex gap-2"><button type="button" disabled={networkPending} onClick={() => runNetworkAction(() => updateConnection({ id: connection.id, status: 'accepted' }))} className="px-3 py-2 text-[10px] font-black uppercase text-forest">Accept</button><button type="button" disabled={networkPending} onClick={() => runNetworkAction(() => updateConnection({ id: connection.id, status: 'rejected' }))} className="px-3 py-2 text-[10px] font-black uppercase text-red-500">Reject</button></div>
+                })()}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Main List Container */}
+      {(profileError || personsError || marriagesError || parentChildError || connectionsError) ? (
+        <QueryError error={profileError || personsError || marriagesError || parentChildError || connectionsError} />
+      ) : personsLoading ? (
+        <div className="rounded-3xl bg-surface p-12 text-center font-black text-forest">Loading family members...</div>
+      ) : (
+      /* Main List Container */
       <div className="bg-surface rounded-3xl border border-sand/20 dark:border-sand/10 shadow-xl overflow-hidden">
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
@@ -121,7 +183,7 @@ export default function FamilyListPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-sand/10 dark:divide-sand/5">
-              {persons.map((person: PersonWithUser) => (
+              {visiblePersons.map((person: PersonWithUser) => (
                 <tr key={person.id} className="group hover:bg-background/30 dark:hover:bg-background/50 transition-all">
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
@@ -197,7 +259,7 @@ export default function FamilyListPage() {
 
         {/* Mobile View */}
         <div className="md:hidden divide-y divide-sand/10 dark:divide-sand/5">
-          {persons.map((person: PersonWithUser) => (
+          {visiblePersons.map((person: PersonWithUser) => (
             <div key={person.id} className="p-6 space-y-5 hover:bg-background/30 dark:hover:bg-background/50 transition-all">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -265,6 +327,7 @@ export default function FamilyListPage() {
           ))}
         </div>
       </div>
+      )}
 
       {/* Modals */}
       {modalType === 'create' && (
@@ -282,7 +345,6 @@ export default function FamilyListPage() {
           existingPerson={selectedPerson}
           allPersons={persons}
           marriages={marriages}
-          isUser={selectedPerson.id === userPerson?.id}
           isParentOfUser={parentChild.some(pc => pc.child_id === userPerson?.id && pc.parent_id === selectedPerson.id)}
           onClose={() => setModalType(null)}
           onSave={async (data: RelationshipFormData) => {
@@ -330,6 +392,7 @@ export default function FamilyListPage() {
           </div>
         </div>
       )}
+      {mergeTargetUid && <MergeTreeModal targetUid={mergeTargetUid} persons={persons} onClose={() => setMergeTargetUid(null)} />}
     </div>
   )
 }

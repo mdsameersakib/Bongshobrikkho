@@ -11,6 +11,7 @@ import { useFamilyMutations } from '@/hooks/useFamilyMutations'
 import { Person } from '@/types/database'
 import { RelationshipFormData, PersonFormData } from '@/types/forms'
 import { Users, Network } from 'lucide-react'
+import { QueryError } from './QueryState'
 
 const MarriageIcon = ({ x, y }: { x: number; y: number }) => (
   <svg x={x - 10} y={y - 10} width="20" height="20" viewBox="0 0 24 24" fill="#546B41" className="pointer-events-none drop-shadow-sm">
@@ -27,10 +28,10 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
   const [modalType, setModalType] = useState<'add' | 'edit' | null>(null)
   
-  const { data: profile } = useProfile()
-  const { data: persons = [] } = usePersons()
-  const { data: marriages = [] } = useMarriages()
-  const { data: parentChild = [] } = useParentChild()
+  const { data: profile, error: profileError } = useProfile()
+  const { data: persons = [], error: personsError } = usePersons()
+  const { data: marriages = [], error: marriagesError } = useMarriages()
+  const { data: parentChild = [], error: parentChildError } = useParentChild()
   const { addRelationship, updatePerson } = useFamilyMutations()
 
   const userPerson = useMemo(() => 
@@ -45,7 +46,8 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
 
   const { zoom, centerOnNode, transform, eventHandlers } = useTreeControls(
     containerRef,
-    userPersonId
+    userPersonId,
+    layout.nodes.length
   )
 
   const handleNodeClick = (person: Person) => {
@@ -56,6 +58,10 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
   const handleAddMember = (person: Person) => {
     setSelectedPerson(person)
     setModalType('add')
+  }
+
+  if (profileError || personsError || marriagesError || parentChildError) {
+    return <QueryError error={profileError || personsError || marriagesError || parentChildError} />
   }
 
   return (
@@ -114,6 +120,7 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
             />
             {/* Quick Add Button */}
             <button 
+              type="button"
               className="absolute z-20 bg-forest text-cream rounded-full h-8 w-8 flex items-center justify-center shadow-xl hover:scale-110 hover:bg-sage transition-all border-2 border-cream group opacity-0 group-hover/btn:opacity-100"
               style={{ left: node.x + 220, top: node.y + 80 }}
               onClick={(e) => { e.stopPropagation(); handleAddMember(node.person); }}
@@ -131,7 +138,6 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
           existingPerson={selectedPerson}
           allPersons={persons}
           marriages={marriages}
-          isUser={selectedPerson.id === userPerson?.id}
           isParentOfUser={parentChild.some(pc => pc.child_id === userPerson?.id && pc.parent_id === selectedPerson.id)}
           onClose={() => setModalType(null)}
           onSave={async (data: RelationshipFormData) => {
@@ -156,6 +162,7 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
       <div className="absolute top-6 right-6 z-10 flex flex-col gap-4">
         <div className="bg-white/80 dark:bg-background/80 backdrop-blur-xl p-1.5 rounded-2xl shadow-2xl border border-sand/30 dark:border-sand/10 flex flex-col gap-1.5">
           <button
+            type="button"
             onClick={() => zoom('in')}
             className="h-12 w-12 flex items-center justify-center rounded-xl hover:bg-forest hover:text-cream text-forest dark:text-sage transition-all font-black text-2xl shadow-sm"
             title="Zoom In"
@@ -164,6 +171,7 @@ export default function TreeCanvas({ userPersonId }: { userPersonId: string | nu
           </button>
           <div className="h-px bg-sand/20 mx-2" />
           <button
+            type="button"
             onClick={() => zoom('out')}
             className="h-12 w-12 flex items-center justify-center rounded-xl hover:bg-forest hover:text-cream text-forest dark:text-sage transition-all font-black text-2xl shadow-sm"
             title="Zoom Out"

@@ -19,6 +19,22 @@ export function usePosts() {
   })
 }
 
+export function useComments(postId: string) {
+  const supabase = createClient()
+  return useQuery({
+    queryKey: ['comments', postId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*, author:profiles(email)')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true })
+      if (error) throw error
+      return data
+    },
+  })
+}
+
 export function useWallMutations() {
   const supabase = createClient()
   const queryClient = useQueryClient()
@@ -69,13 +85,16 @@ export function useWallMutations() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
-      const { error } = await supabase
+      const { data: existing, error: readError } = await supabase
         .from('reactions')
-        .upsert({
-          post_id,
-          user_uid: user.id,
-          reaction_type: type
-        }, { onConflict: 'post_id,user_uid' })
+        .select('id, reaction_type')
+        .eq('post_id', post_id)
+        .eq('user_uid', user.id)
+        .maybeSingle()
+      if (readError) throw readError
+      const { error } = existing?.reaction_type === type
+        ? await supabase.from('reactions').delete().eq('id', existing.id)
+        : await supabase.from('reactions').upsert({ post_id, user_uid: user.id, reaction_type: type }, { onConflict: 'post_id,user_uid' })
       
       if (error) throw error
     },
@@ -84,10 +103,51 @@ export function useWallMutations() {
     }
   })
 
+  const addComment = useMutation({
+    mutationFn: async ({ post_id, content }: { post_id: string; content: string }) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+      const { error } = await supabase.from('comments').insert({ post_id, content, author_uid: user.id })
+      if (error) throw error
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['comments', variables.post_id] })
+    },
+  })
+
+  const updatePost = useMutation({
+    mutationFn: async ({ id, content }: { id: string; content: string }) => {
+      const { error } = await supabase.from('posts').update({ content }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['posts'] }),
+  })
+
+  const deletePost = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('posts').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['posts'] }),
+  })
+
+  const deleteComment = useMutation({
+    mutationFn: async ({ id, post_id }: { id: string; post_id: string }) => {
+      const { error } = await supabase.from('comments').delete().eq('id', id)
+      if (error) throw error
+      return post_id
+    },
+    onSuccess: (_, variables) => queryClient.invalidateQueries({ queryKey: ['comments', variables.post_id] }),
+  })
+
   return {
     createPost: createPost.mutateAsync,
     uploadImage,
     addReaction: addReaction.mutateAsync,
-    isPosting: createPost.isPending
+    addComment: addComment.mutateAsync,
+    updatePost: updatePost.mutateAsync,
+    deletePost: deletePost.mutateAsync,
+    deleteComment: deleteComment.mutateAsync,
+    isPosting: createPost.isPending || addComment.isPending || updatePost.isPending || deletePost.isPending || deleteComment.isPending
   }
 }
